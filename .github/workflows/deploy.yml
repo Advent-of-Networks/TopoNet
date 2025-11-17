@@ -40,7 +40,7 @@ jobs:
 
     environment:
       name: github-pages
-      url: $
+      url: https://advent-of-networks.github.io/TopoNet/
 
     runs-on: ubuntu-latest
     steps:
