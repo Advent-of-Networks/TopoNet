@@ -5,8 +5,8 @@ import { Camera } from "./Camera";
 import { Mouse } from "./Mouse";
 
 export class Emulation {
-    canvas = document.getElementById('canvas') as HTMLCanvasElement;
-    ctx = this.canvas.getContext('2d')!;
+    canvas : HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
 
     hoveringNode: NetworkNode | null = null;
     draggingNode: NetworkNode | null = null;
@@ -24,6 +24,11 @@ export class Emulation {
     nodes: NetworkNode[] = [];
     ports: Port[] = [];
     connections: Connection[] = [];
+
+    constructor(canvas: HTMLCanvasElement) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d")!;
+    }
 
     updateFPS() {
         const now = performance.now();
