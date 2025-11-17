@@ -1,3 +1,11 @@
+function cubicBezier(t: number, p0: number, p1: number, p2: number, p3: number) {
+    const u = 1 - t;
+    return u*u*u*p0
+         + 3*u*u*t*p1
+         + 3*u*t*t*p2
+         + t*t*t*p3;
+}
+
 enum PortSide {
     NORTH,
     EAST,
@@ -8,6 +16,7 @@ enum PortSide {
 class Port {
     node: NetworkNode;
     side: PortSide;
+    connection: Connection | null = null;
     offsetX: number = 0;
     offsetY: number = 0;
     height: number = 10;
@@ -16,6 +25,23 @@ class Port {
     constructor(node: NetworkNode, side: PortSide) {
         this.node = node;
         this.side = side;
+    }
+
+    connect(connection: Connection) {
+        this.connection = connection;
+    }
+
+    disconnect() {
+        this.connection = null;
+    }
+
+    send() {
+        if (!this.connection) throw new Error("This port is not connected!");
+        this.connection.addTransitUnit(new TransitUnit(this.connection, this.connection.from === this));
+    }
+
+    receive() {
+
     }
 
     render(ctx: CanvasRenderingContext2D) {
@@ -115,9 +141,26 @@ class Connection {
     from: Port;
     to: Port;
 
+    transitUnits: TransitUnit[] = [];
+    delay: number = 200;
+
     constructor(from: Port, to: Port) {
         this.from = from;
         this.to = to;
+        this.from.connect(this);
+        this.to.connect(this);
+    }
+
+    addTransitUnit(transitUnit: TransitUnit) {
+        this.transitUnits.push(transitUnit);
+    }
+
+    removeTransitUnit(transitUnit: TransitUnit) {
+        this.transitUnits = this.transitUnits.filter(t => t !== transitUnit);
+    }
+
+    update(deltaT: number) {
+        this.transitUnits.forEach(t => t.update(deltaT));
     }
 
     render(ctx: CanvasRenderingContext2D) {
@@ -153,6 +196,77 @@ class Connection {
         ctx.moveTo(startX, startY);
         ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
         ctx.stroke();
+
+        this.transitUnits.forEach(t => t.render(ctx));
+    }
+}
+
+class TransitUnit {
+
+    progress: number = 0;
+    
+    constructor(
+        public connection: Connection,
+        public forward: boolean = true
+    ) {}
+
+    update(deltaT: number) {
+        const deltaP = (deltaT) / this.connection.delay;
+        this.progress += deltaP;
+        if (this.progress > 1) {
+            const receiver = this.forward ? this.connection.to : this.connection.from;
+            this.connection.removeTransitUnit(this);
+            receiver.receive();
+        }
+    }
+
+    render(ctx: CanvasRenderingContext2D) {
+        const start = this.forward ? this.connection.from : this.connection.to;
+        const end   = this.forward ? this.connection.to : this.connection.from;
+
+        // const x1 = start.node.x + start.offsetX;
+        // const y1 = start.node.y + start.offsetY;
+        // const x2 = end.node.x + end.offsetX;
+        // const y2 = end.node.y + end.offsetY;
+
+        // const px = x1 + (x2 - x1) * this.progress;
+        // const py = y1 + (y2 - y1) * this.progress;
+
+        const x1 = start.node.x + start.offsetX;
+        const y1 = start.node.y + start.offsetY;
+        const x4 = end.node.x   + end.offsetX;
+        const y4 = end.node.y   + end.offsetY;
+
+        // --- Compute control points identical to Connection.render() ---
+        let cp1X = x1, cp1Y = y1;
+        let cp2X = x4, cp2Y = y4;
+
+        const offset = 50;
+
+        switch(start.side) {
+            case PortSide.NORTH: cp1Y -= offset; break;
+            case PortSide.SOUTH: cp1Y += offset; break;
+            case PortSide.WEST:  cp1X -= offset; break;
+            case PortSide.EAST:  cp1X += offset; break;
+        }
+
+        switch(end.side) {
+            case PortSide.NORTH: cp2Y -= offset; break;
+            case PortSide.SOUTH: cp2Y += offset; break;
+            case PortSide.WEST:  cp2X -= offset; break;
+            case PortSide.EAST:  cp2X += offset; break;
+        }
+
+        // --- Compute point on cubic Bézier ---
+        const t = this.progress;
+
+        const px = cubicBezier(t, x1, cp1X, cp2X, x4);
+        const py = cubicBezier(t, y1, cp1Y, cp2Y, y4);
+
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fill();
     }
 }
 
@@ -179,6 +293,7 @@ let hoveringNode: NetworkNode | null = null;
 let draggingNode: NetworkNode | null = null;
 let offsetX = 0;
 let offsetY = 0;
+let speedFactor: number = 0.1;
 
 const mouse = new Mouse();
 const camera = new Camera();
@@ -190,29 +305,26 @@ const nodes: NetworkNode[] = [
     new NetworkNode(100, 100),
 ];
 
-const side = PortSide.EAST;
-const port1 = nodes[0].addPort(PortSide.EAST);
-const port2 = nodes[0].addPort(PortSide.EAST);
-const port3 = nodes[0].addPort(PortSide.EAST);
+const ports: Port[] = [];
 
-const port4 = nodes[1].addPort(PortSide.WEST);
-const port5 = nodes[1].addPort(PortSide.WEST);
-const port6 = nodes[1].addPort(PortSide.EAST);
-
-const port7 = nodes[2].addPort(PortSide.NORTH);
-const port8 = nodes[2].addPort(PortSide.WEST);
-
-const port9 = nodes[3].addPort(PortSide.WEST);
-const port10 = nodes[3].addPort(PortSide.WEST);
+ports.push(nodes[0].addPort(PortSide.EAST));
+ports.push(nodes[0].addPort(PortSide.EAST));
+ports.push(nodes[0].addPort(PortSide.EAST));
+ports.push(nodes[1].addPort(PortSide.WEST));
+ports.push(nodes[1].addPort(PortSide.WEST));
+ports.push(nodes[1].addPort(PortSide.EAST));
+ports.push(nodes[2].addPort(PortSide.NORTH));
+ports.push(nodes[2].addPort(PortSide.WEST));
+ports.push(nodes[3].addPort(PortSide.WEST));
+ports.push(nodes[3].addPort(PortSide.WEST));
 
 const connections: Connection[] = [
-    new Connection(port1, port4),
-    new Connection(port2, port8),
-    new Connection(port3, port10),
-    new Connection(port5, port9),
-    new Connection(port6, port7),
+    new Connection(ports[0], ports[3]),
+    new Connection(ports[1], ports[7]),
+    new Connection(ports[2], ports[9]),
+    new Connection(ports[4], ports[8]),
+    new Connection(ports[5], ports[6]),
 ];
-
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -223,6 +335,20 @@ function render() {
     nodes.forEach(node => node.render(ctx));
     connections.forEach(connection => connection.render(ctx));
     ctx.restore();
+}
+
+const chance = 500;
+
+function update(deltaT: number) {
+
+    for (const port of ports) {
+        const rand = Math.floor(Math.random()*chance);
+        if (rand ===0) {
+            port.send();
+        }
+    }
+
+    connections.forEach(connection => connection.update(deltaT));
 }
 
 function resize() {
@@ -327,7 +453,8 @@ function wheel(e: WheelEvent) {
 
 }
 
-let lastFrameTime = performance.now();
+const startTime = performance.now();
+let lastFrameTime = startTime;
 let fps = 0;
 
 function updateFPS() {
@@ -335,7 +462,7 @@ function updateFPS() {
     const deltaT = now - lastFrameTime;
     fps = 1000 / (now - lastFrameTime);
     lastFrameTime = now;
-    return deltaT / 1000;
+    return deltaT;
 }
 
 function debug(ctx: CanvasRenderingContext2D) {
@@ -356,6 +483,9 @@ function debug(ctx: CanvasRenderingContext2D) {
         `  isPanning: ${camera.isPanning}`,
         `  Panning Start: ${camera.panStartX} ${camera.panStartY}`,
         `  Zoom: ${camera.zoom}`,
+        `Time`,
+        `  Start: ${startTime}`,
+        `  Last Frame: ${lastFrameTime}`,
     ];
 
     lines.forEach((line, i) => {
@@ -367,6 +497,7 @@ function debug(ctx: CanvasRenderingContext2D) {
 
 function loop() {
     const deltaT = updateFPS();
+    update(deltaT * speedFactor);
     render();
     debug(ctx);
     requestAnimationFrame(loop);
