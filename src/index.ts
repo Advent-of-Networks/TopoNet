@@ -4,7 +4,7 @@ import { NetworkNode } from "./components/NetworkNode";
 import { Emulation } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 
-customElements.define('ui-window', UIWindow);
+
 
 export class TopoNet extends HTMLElement {
 
@@ -14,6 +14,7 @@ export class TopoNet extends HTMLElement {
 
     constructor() {
         super();
+        
         this.shadow = this.attachShadow({ mode: "open" });
         this.canvas = document.createElement('canvas');
         this.emulation = new Emulation(this.canvas);
@@ -71,32 +72,35 @@ export class TopoNet extends HTMLElement {
 
         this.emulation.start();
 
-        const w = document.createElement("ui-window");
-        w.setAttribute("title", "Welcome");
-        w.setAttribute("height", "400");
-        w.setAttribute("width", "600");
-        w.innerHTML = `
-            <style>
-                .center {
-                    display: flex;
-                    flex-direction: column;
-                    text-align: center;
-                    padding: 10px;
-                }
-            </style>
-            <div class="center">
-                <h1>Welcome to TopoNet</h1>
-                <p>
-                    TopoNet is a web-based networking simulator for educational purposes.
-                    We are currently heavily in development, but expect to be fully functional by the end of 2026.
-                    By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
-                </p>
-            </div>
-        `;
-        w.addEventListener("close", () => {
-            this.shadow.removeChild(w);
-        });
-        this.shadow.appendChild(w);
+        const welcome = new UIWindow(this);
+        welcome.setContent(
+            `
+                <style>
+                    .center {
+                        display: flex;
+                        flex-direction: column;
+                        text-align: center;
+                        padding: 10px;
+                    }
+                </style>
+                <div class="center">
+                    <h1>Welcome to TopoNet</h1>
+                    <p>
+                        TopoNet is a web-based networking simulator for educational purposes.
+                        We are currently heavily in development, but expect to be fully functional by the end of 2026.
+                        By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
+                    </p>
+                </div>
+            `
+        );
+    }
+
+    removeElement(element: HTMLElement) {
+        this.shadow.removeChild(element);
+    }
+
+    append(element: HTMLElement) {
+        this.shadow.append(element);
     }
 
     disconnectedCallback() {
@@ -104,4 +108,8 @@ export class TopoNet extends HTMLElement {
     }
 }
 
-customElements.define('toponet-element', TopoNet);
+
+
+if (!customElements.get("toponet-element")) {
+    customElements.define('toponet-element', TopoNet);
+}

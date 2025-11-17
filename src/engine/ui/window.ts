@@ -1,5 +1,7 @@
+import { TopoNet } from "../..";
+
 enum Direction { None, N, E, S, W, NE, SE, SW, NW };
-export class UIWindow extends HTMLElement {
+export class UIWindowElement extends HTMLElement {
     
     private readonly RESIZE_MARGIN = 5;
     private readonly MIN_HEIGHT = 100;
@@ -290,4 +292,33 @@ export class UIWindow extends HTMLElement {
 
     }
 
+}
+
+
+export class UIWindow {
+
+    private window: HTMLElement;
+    private display: TopoNet;
+
+    constructor(display: TopoNet, title: string = "Window", widht: number = 600, height: number = 400) {
+        if(!customElements.get("ui-window")) customElements.define('ui-window', UIWindowElement);
+
+        this.display = display;
+
+        this.window = document.createElement("ui-window");
+        this.window.setAttribute("title", title);
+        this.window.setAttribute("height", `${height}`);
+        this.window.setAttribute("width", `${widht}`);
+
+        this.window.addEventListener("close", () => {
+            this.display.removeElement(this.window);
+        });
+        
+        this.display.append(this.window);
+    }
+
+    setContent(content: string) {
+        this.window.innerHTML = content;
+    }
+    
 }
