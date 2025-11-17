@@ -1,3 +1,28 @@
+enum PortSide {
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST,
+}
+
+class Port {
+    node: NetworkNode;
+    side: PortSide;
+    offsetX: number = 0;
+    offsetY: number = 0;
+    height: number = 10;
+    width: number = 10;
+
+    constructor(node: NetworkNode, side: PortSide) {
+        this.node = node;
+        this.side = side;
+    }
+
+    render(ctx: CanvasRenderingContext2D) {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(this.node.x - this.width/2 + this.offsetX, this.node.y - this.height/2 + this.offsetY, 10, 10);
+    }
+}
 
 class NetworkNode {
     x: number;
@@ -5,12 +30,62 @@ class NetworkNode {
     width: number;
     height: number;
     isHovered: boolean = false;
+    ports: Port[] = [];
 
     constructor(x:number, y: number, width: number = 50, height: number = 50) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+    addPort(side: PortSide): Port {
+        const port = new Port(this, side);
+        this.ports.push(port);
+
+        const portsOnSide = this.ports.filter(p => p.side === side);
+        const numPorts = portsOnSide.length;
+
+        switch (side) {
+            case PortSide.NORTH: {
+                    const dx = this.width/(numPorts+1);
+                    let x = -this.width/2;
+                    for (let i = 0; i < numPorts; i++) {
+                        portsOnSide[i].offsetX = x + (i+1) * dx;
+                        portsOnSide[i].offsetY = -this.height/2;
+                    }
+                    break;
+                }
+            case PortSide.EAST: {
+                    const dy = this.height/(numPorts+1);
+                    let y = -this.height/2;
+                    for (let i = 0; i < numPorts; i++) {
+                        portsOnSide[i].offsetX = this.width/2;
+                        portsOnSide[i].offsetY = y + (i+1) * dy;
+                    }
+                    break;
+                }
+            case PortSide.SOUTH: {
+                    const dx = this.width/(numPorts+1);
+                    let x = -this.width/2;
+                    for (let i = 0; i < numPorts; i++) {
+                        portsOnSide[i].offsetX = x + (i+1) * dx;
+                        portsOnSide[i].offsetY = this.height/2;
+                    }
+                    break;
+                }
+            case PortSide.WEST: {
+                    const dy = this.height/(numPorts+1);
+                    let y = -this.height/2;
+                    for (let i = 0; i < numPorts; i++) {
+                        portsOnSide[i].offsetX = -this.width/2;
+                        portsOnSide[i].offsetY = y + (i+1) * dy;
+                    }
+                    break;
+                }
+            }
+
+        return port;
     }
 
     render(ctx: CanvasRenderingContext2D) {
@@ -21,6 +96,9 @@ class NetworkNode {
             ctx.lineWidth = 3;
             ctx.strokeRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
         }
+        for (const port of this.ports) {
+            port.render(ctx);
+        }
     }
 
     contains(px: number, py: number) {
@@ -30,6 +108,51 @@ class NetworkNode {
             py >= this.y - this.height/2 &&
             py <= this.y + this.height/2
         );
+    }
+}
+
+class Connection {
+    from: Port;
+    to: Port;
+
+    constructor(from: Port, to: Port) {
+        this.from = from;
+        this.to = to;
+    }
+
+    render(ctx: CanvasRenderingContext2D) {
+        const startX = this.from.node.x + this.from.offsetX;
+        const startY = this.from.node.y + this.from.offsetY;
+        const endX = this.to.node.x + this.to.offsetX;
+        const endY = this.to.node.y + this.to.offsetY;
+
+        let cp1X = startX;
+        let cp1Y = startY;
+        let cp2X = endX;
+        let cp2Y = endY;
+
+        const offset = 50;
+
+        switch(this.from.side) {
+            case PortSide.NORTH: cp1Y -= offset; break;
+            case PortSide.SOUTH: cp1Y += offset; break;
+            case PortSide.WEST: cp1X -= offset; break;
+            case PortSide.EAST: cp1X += offset; break;
+        }
+
+        switch(this.to.side) {
+            case PortSide.NORTH: cp2Y -= offset; break;
+            case PortSide.SOUTH: cp2Y += offset; break;
+            case PortSide.WEST: cp2X -= offset; break;
+            case PortSide.EAST: cp2X += offset; break;
+        }
+
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
+        ctx.stroke();
     }
 }
 
@@ -61,10 +184,33 @@ const mouse = new Mouse();
 const camera = new Camera();
 
 const nodes: NetworkNode[] = [
+    new NetworkNode(-100, -100),
+    new NetworkNode(100, -100),
+    new NetworkNode(300, 0),
     new NetworkNode(100, 100),
-    new NetworkNode(300, 100),
-    new NetworkNode(500, 200),
-    new NetworkNode(300, 300),
+];
+
+const side = PortSide.EAST;
+const port1 = nodes[0].addPort(PortSide.EAST);
+const port2 = nodes[0].addPort(PortSide.EAST);
+const port3 = nodes[0].addPort(PortSide.EAST);
+
+const port4 = nodes[1].addPort(PortSide.WEST);
+const port5 = nodes[1].addPort(PortSide.WEST);
+const port6 = nodes[1].addPort(PortSide.EAST);
+
+const port7 = nodes[2].addPort(PortSide.NORTH);
+const port8 = nodes[2].addPort(PortSide.WEST);
+
+const port9 = nodes[3].addPort(PortSide.WEST);
+const port10 = nodes[3].addPort(PortSide.WEST);
+
+const connections: Connection[] = [
+    new Connection(port1, port4),
+    new Connection(port2, port8),
+    new Connection(port3, port10),
+    new Connection(port5, port9),
+    new Connection(port6, port7),
 ];
 
 
@@ -75,6 +221,7 @@ function render() {
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(camera.x, camera.y);
     nodes.forEach(node => node.render(ctx));
+    connections.forEach(connection => connection.render(ctx));
     ctx.restore();
 }
 
