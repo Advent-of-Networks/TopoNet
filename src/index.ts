@@ -484,6 +484,7 @@ function debug(ctx: CanvasRenderingContext2D) {
         `  Panning Start: ${camera.panStartX} ${camera.panStartY}`,
         `  Zoom: ${camera.zoom}`,
         `Time`,
+        `  Speed: ${speedFactor}`,
         `  Start: ${startTime}`,
         `  Last Frame: ${lastFrameTime}`,
     ];
