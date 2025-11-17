@@ -72,7 +72,30 @@ export class TopoNet extends HTMLElement {
         this.emulation.start();
 
         const w = document.createElement("ui-window");
-        w.setAttribute("title", "OH HELLO THERE!!")
+        w.setAttribute("title", "Welcome");
+        w.setAttribute("height", "400");
+        w.setAttribute("width", "600");
+        w.innerHTML = `
+            <style>
+                .center {
+                    display: flex;
+                    flex-direction: column;
+                    text-align: center;
+                    padding: 10px;
+                }
+            </style>
+            <div class="center">
+                <h1>Welcome to TopoNet</h1>
+                <p>
+                    TopoNet is a web-based networking simulator for educational purposes.
+                    We are currently heavily in development, but expect to be fully functional by the end of 2026.
+                    By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
+                </p>
+            </div>
+        `;
+        w.addEventListener("close", () => {
+            this.shadow.removeChild(w);
+        });
         this.shadow.appendChild(w);
     }
 
