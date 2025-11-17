@@ -2,6 +2,9 @@ import { PortSide } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
 import { Emulation } from "./engine/Emulation";
+import { UIWindow } from "./engine/ui/window";
+
+customElements.define('ui-window', UIWindow);
 
 export class TopoNet extends HTMLElement {
 
@@ -67,6 +70,10 @@ export class TopoNet extends HTMLElement {
         }
 
         this.emulation.start();
+
+        const w = document.createElement("ui-window");
+        w.setAttribute("title", "OH HELLO THERE!!")
+        this.shadow.appendChild(w);
     }
 
     disconnectedCallback() {
