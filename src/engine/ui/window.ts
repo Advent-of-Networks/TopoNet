@@ -1,5 +1,13 @@
+import { TopoNet } from "../..";
+
+import { icon } from "@fortawesome/fontawesome-svg-core";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
+
 enum Direction { None, N, E, S, W, NE, SE, SW, NW };
-export class UIWindow extends HTMLElement {
+export class UIWindowElement extends HTMLElement {
     
     private readonly RESIZE_MARGIN = 5;
     private readonly MIN_HEIGHT = 100;
@@ -42,8 +50,9 @@ export class UIWindow extends HTMLElement {
         const title = document.createElement("span");
         title.textContent = this.getAttribute("title") || "Unnamed Window";
 
+        const svgIcon = icon(faTimes).node[0] as SVGElement;
         const closeButton = document.createElement("button");
-        closeButton.textContent = "x";
+        closeButton.appendChild(svgIcon);
         closeButton.id = "closeButton";
         closeButton.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -71,9 +80,10 @@ export class UIWindow extends HTMLElement {
                 width: ${width}px;
                 height: ${height}px;
                 background: rgba(255, 255, 255, 1);
-                border: 3px solid #333;
-                border-radius: 5px;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                border-radius: 5px 5px 0 0;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+                background: #333;
+                border: 1px solid #000;
                 user-select: none;
                 font-family: arial;
                 box-sizing: border-box;
@@ -82,25 +92,43 @@ export class UIWindow extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
+                border-radius: 5px 5px 0 0;
+                box-sizing: border-box;
+                overflow: hidden;
+                border-top: 1px solid #888;
             }
             #topbar {
                 background: #333;
+                border-radius: 5px 5px 0 0;
                 color: #eee;
-                padding: 3px 5px;
+                padding: 6px 10px 3px 10px;
                 cursor: move;
                 flex: 0 0 auto;
                 display: flex;
                 justify-content: space-between;
             }
             #closeButton {
-                background: blue;
+                background: #3377ff;
                 color: white;
                 border: 0 none;
                 border-radius: 100%;
+                height: 20px;
+                width: 20px;
+                padding: 6px 5px 5px 6px;
+                box-shadow: 0 0 2px rgba(255,255,255,0.4);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+            }
+            #closeButton:hover {
+                background: #4499ff;
             }
             #content {
                 flex: 1;
                 overflow: auto;
+                background: white;
+                margin: 3px;
             }
         `;
 
@@ -290,4 +318,33 @@ export class UIWindow extends HTMLElement {
 
     }
 
+}
+
+
+export class UIWindow {
+
+    private window: HTMLElement;
+    private display: TopoNet;
+
+    constructor(display: TopoNet, title: string = "Window", widht: number = 600, height: number = 400) {
+        if(!customElements.get("ui-window")) customElements.define('ui-window', UIWindowElement);
+
+        this.display = display;
+
+        this.window = document.createElement("ui-window");
+        this.window.setAttribute("title", title);
+        this.window.setAttribute("height", `${height}`);
+        this.window.setAttribute("width", `${widht}`);
+
+        this.window.addEventListener("close", () => {
+            this.display.removeElement(this.window);
+        });
+        
+        this.display.append(this.window);
+    }
+
+    setContent(content: string) {
+        this.window.innerHTML = content;
+    }
+    
 }

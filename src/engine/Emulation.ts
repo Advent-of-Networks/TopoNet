@@ -1,6 +1,5 @@
 import { Connection } from "../components/Connection";
 import { NetworkNode } from "../components/NetworkNode";
-import { Port } from "../components/Ports";
 import { Camera } from "./Camera";
 import { Mouse } from "./Mouse";
 
@@ -22,7 +21,6 @@ export class Emulation {
     camera = new Camera();
 
     nodes: NetworkNode[] = [];
-    ports: Port[] = [];
     connections: Connection[] = [];
 
     constructor(canvas: HTMLCanvasElement) {
@@ -139,14 +137,7 @@ export class Emulation {
     }
 
     update(deltaT: number) {
-        const chance = 500;
-        for (const port of this.ports) {
-            const rand = Math.floor(Math.random()*chance);
-            if (rand ===0) {
-                port.send();
-            }
-        }
-
+        this.nodes.forEach(node => node.update(deltaT));
         this.connections.forEach(connection => connection.update(deltaT));
     }
 
