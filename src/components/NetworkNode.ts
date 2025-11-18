@@ -64,6 +64,16 @@ export class NetworkNode {
         return port;
     }
 
+    update(deltaT: number) {
+        const chance = 500;
+        for (const port of this.ports) {
+            const rand = Math.floor(Math.random()*chance);
+            if (rand ===0) {
+                port.send();
+            }
+        }
+    }
+
     render(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = 'orange';
         ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);

@@ -1,4 +1,4 @@
-import { PortSide } from "./components/Ports";
+import { Port, PortSide } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
 import { Emulation } from "./engine/Emulation";
@@ -49,50 +49,31 @@ export class TopoNet extends HTMLElement {
             this.emulation.nodes.push(node);
         }
 
-        this.emulation.ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
-        this.emulation.ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
-        this.emulation.ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
-        this.emulation.ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
-        this.emulation.ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
-        this.emulation.ports.push(this.emulation.nodes[1].addPort(PortSide.EAST));
-        this.emulation.ports.push(this.emulation.nodes[2].addPort(PortSide.NORTH));
-        this.emulation.ports.push(this.emulation.nodes[2].addPort(PortSide.WEST));
-        this.emulation.ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
-        this.emulation.ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
+
+        const ports: Port[] = [];
+
+        ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[1].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[2].addPort(PortSide.NORTH));
+        ports.push(this.emulation.nodes[2].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
 
         for (const connection of [
-            new Connection(this.emulation.ports[0], this.emulation.ports[3]),
-            new Connection(this.emulation.ports[1], this.emulation.ports[7]),
-            new Connection(this.emulation.ports[2], this.emulation.ports[9]),
-            new Connection(this.emulation.ports[4], this.emulation.ports[8]),
-            new Connection(this.emulation.ports[5], this.emulation.ports[6]),
+            new Connection(ports[0], ports[3]),
+            new Connection(ports[1], ports[7]),
+            new Connection(ports[2], ports[9]),
+            new Connection(ports[4], ports[8]),
+            new Connection(ports[5], ports[6]),
         ]) {
             this.emulation.connections.push(connection);
         }
 
         this.emulation.start();
-
-        const welcome = new UIWindow(this);
-        welcome.setContent(
-            `
-                <style>
-                    .center {
-                        display: flex;
-                        flex-direction: column;
-                        text-align: center;
-                        padding: 10px;
-                    }
-                </style>
-                <div class="center">
-                    <h1>Welcome to TopoNet</h1>
-                    <p>
-                        TopoNet is a web-based networking simulator for educational purposes.
-                        We are currently heavily in development, but expect to be fully functional by the end of 2026.
-                        By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
-                    </p>
-                </div>
-            `
-        );
     }
 
     removeElement(element: HTMLElement) {
@@ -113,3 +94,28 @@ export class TopoNet extends HTMLElement {
 if (!customElements.get("toponet-element")) {
     customElements.define('toponet-element', TopoNet);
 }
+
+
+const toponet = document.getElementById("toponet")! as TopoNet;
+
+const welcome = new UIWindow(toponet, "Welcome");
+        welcome.setContent(
+            `
+                <style>
+                    .center {
+                        display: flex;
+                        flex-direction: column;
+                        text-align: center;
+                        padding: 10px;
+                    }
+                </style>
+                <div class="center">
+                    <h1>Welcome to TopoNet</h1>
+                    <p>
+                        TopoNet is a web-based networking simulator for educational purposes.
+                        We are currently heavily in development, but expect to be fully functional by the end of 2026.
+                        By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
+                    </p>
+                </div>
+            `
+        );
