@@ -1,11 +1,11 @@
 import { Port, PortSide } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
-import { Emulation } from "./engine/Emulation";
+import { Emulation, PauseEvent } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
-import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faPause, faPlay, faStepForward } from "@fortawesome/free-solid-svg-icons";
 
 
 
@@ -107,6 +107,28 @@ export class TopoNet extends HTMLElement {
                 });
             }
         });
+        
+        const pauseIcon = icon(faPause).node[0] as SVGElement;
+        const playIcon = icon(faPlay).node[0] as SVGAElement;
+        const pauseButton = new HUDButton(this.emulation.paused ? playIcon : pauseIcon, (e) => {
+            this.emulation.togglePause();
+        });
+
+        const stepIcon = icon(faStepForward).node[0] as SVGElement;
+        const stepButton = new HUDButton(stepIcon, (e) => {
+            this.emulation.step();
+        });
+        stepButton.setDisabled(!this.emulation.paused);
+
+
+        this.emulation.addEventListener("pause", (e) => {
+            const {paused} = (e as PauseEvent).detail;
+            pauseButton.setIcon(paused ? playIcon : pauseIcon);
+            stepButton.setDisabled(!this.emulation.paused);
+        })
+        
+        hud.appendButton(pauseButton);
+        hud.appendButton(stepButton);
         hud.appendButton(settingsButton);
 
         this.emulation.start();
