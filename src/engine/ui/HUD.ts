@@ -21,10 +21,8 @@ export class UIHUD extends HTMLElement {
         const buttonSize = 30;
         const padding = 13;
 
-        const width = 60;
         const height = buttonSize + 2*padding;
 
-        const left = window.innerWidth/2 - width/2;
         const top = 10;
 
         const style = document.createElement("style");
@@ -32,18 +30,14 @@ export class UIHUD extends HTMLElement {
             :host {
                 position: absolute;
                 top: ${top}px;
-                left: ${left}px;
-                width: auto;
                 height: ${height}px;
-                background: rgba(255, 255, 255, 1);
+                width: 100%;
+                display: flex;
                 border-radius: 5px 5px;
-                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-                background: #33333350;
-                backdrop-filter: blur(10px);
-                border: 1px solid #000;
                 user-select: none;
                 font-family: arial;
                 box-sizing: border-box;
+                justify-content: center;
             }
             #container {
                 display: flex;
@@ -53,6 +47,9 @@ export class UIHUD extends HTMLElement {
                 border-radius: 5px;
                 box-sizing: border-box;
                 overflow: hidden;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(10px);
+                background: #33333350;
                 border-top: 1px solid #888;
                 border-bottom: 1px solid #000;
                 align-items: center;
@@ -79,6 +76,9 @@ export class UIHUD extends HTMLElement {
             .button:hover svg path {
                 fill: gray;
             }
+            .button:disabled svg path {
+                fill: gray;
+            }
         `;
 
         this.shadow.append(style, this.container);
@@ -93,13 +93,22 @@ export class UIHUD extends HTMLElement {
 
 export class HUDButton {
 
-    element: HTMLElement;
+    element: HTMLButtonElement;
 
     constructor(icon: SVGElement, onClick: (event: MouseEvent) => void) {
-        this.element = document.createElement("button");
+        this.element = document.createElement("button") as HTMLButtonElement;
         this.element.appendChild(icon);
         this.element.className = "button ";
         this.element.addEventListener("click", onClick);
+    }
+    
+    setIcon(icon: SVGElement) {
+        this.element.innerHTML = "";
+        this.element.appendChild(icon);
+    }
+    
+    setDisabled(disabled: boolean) {
+        this.element.disabled = disabled;
     }
 }
 

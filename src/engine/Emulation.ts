@@ -2,8 +2,13 @@ import { Connection } from "../components/Connection";
 import { NetworkNode } from "../components/NetworkNode";
 import { Camera } from "./Camera";
 import { Mouse } from "./Mouse";
+interface PauseEventDetails {
+    paused: boolean;
+}
 
-export class Emulation {
+export type PauseEvent = CustomEvent<PauseEventDetails>;
+
+export class Emulation extends EventTarget {
     canvas : HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
 
@@ -19,6 +24,10 @@ export class Emulation {
     lastFrameTime = this.startTime;
     fps = 0;
 
+    paused: boolean = false;
+    steps: number = 0;
+    stepScale: number = 1000;
+
     debugMode: boolean = false;
 
     mouse = new Mouse();
@@ -28,6 +37,7 @@ export class Emulation {
     connections: Connection[] = [];
 
     constructor(canvas: HTMLCanvasElement) {
+        super();
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d")!;
     }
@@ -223,7 +233,10 @@ export class Emulation {
     }
 
     loop() {
-        const deltaT = this.updateFPS();
+        let deltaT = this.updateFPS();
+        if (this.paused) deltaT = this.steps;
+        this.steps = 0;
+        console.log(deltaT);
         this.update(deltaT * this.speedFactor);
         this.render();
         this.debug();
@@ -239,5 +252,14 @@ export class Emulation {
         this.canvas.addEventListener('wheel', this.wheel.bind(this), {passive: false});
         this.resize();
         this.loop();
+    }
+
+    step() {
+        this.steps += this.stepScale * this.speedFactor;
+    }
+
+    togglePause() {
+        this.paused = !this.paused;
+        this.dispatchEvent(new CustomEvent<PauseEventDetails>("pause", {detail: { paused: this.paused}}));
     }
 }
