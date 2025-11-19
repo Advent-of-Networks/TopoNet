@@ -236,7 +236,6 @@ export class Emulation extends EventTarget {
         let deltaT = this.updateFPS();
         if (this.paused) deltaT = this.steps;
         this.steps = 0;
-        console.log(deltaT);
         this.update(deltaT * this.speedFactor);
         this.render();
         this.debug();

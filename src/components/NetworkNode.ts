@@ -65,10 +65,9 @@ export class NetworkNode {
     }
 
     update(deltaT: number) {
-        const chance = 500;
+        const p = 6 * deltaT / 5000;
         for (const port of this.ports) {
-            const rand = Math.floor(Math.random()*chance);
-            if (rand ===0) {
+            if (Math.random() < p) {
                 port.send();
             }
         }
