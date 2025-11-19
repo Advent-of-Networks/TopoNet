@@ -1,7 +1,7 @@
 import { Port, PortSide } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
-import { Emulation, PauseEvent } from "./engine/Emulation";
+import { Emulation, NodeClickedEvent, PauseEvent } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
@@ -126,6 +126,61 @@ export class TopoNet extends HTMLElement {
             pauseButton.setIcon(paused ? playIcon : pauseIcon);
             stepButton.setDisabled(!this.emulation.paused);
         })
+
+        let nodeWindows: (UIWindow | null)[] = [];
+        this.emulation.addEventListener("onNodeClick", (e) => {
+            const {node} = (e as NodeClickedEvent).detail;
+            if (!nodeWindows[node.id]) {
+                nodeWindows[node.id] = new UIWindow(this, `Node ${node.id}`);
+                const portList = node.ports
+                    .map(port => (
+                        `<tr>
+                            <td>${port.id}</td>
+                            <td>${port.side}</td>
+                            <td>${port.mac.map(b => b.toString(16).padStart(2, "0")).join(":").toUpperCase()}</td>
+                        </tr>`
+                    ))
+                    .join("");
+                nodeWindows[node.id]!.setContent(
+                    `
+                        <style>
+                            #content {
+                                padding: 0px 20px 0px 20px;
+                            }
+                            table {
+                                border-collapse: collapse;
+                            }
+                            tr, td, th {
+                                border: 1px solid #454545;
+                                padding: 10px 20px;
+                            }
+                            th {
+                                background: #555555;
+                            }
+                            tr {
+                                background: #393939;
+                            }
+                            tr:nth-child(odd) {
+                                background: #222222;
+                            }
+                        </style>
+                        <div id="content">
+                            <h1>Node ${node.id}</h1>
+                            <h2>Ports:</h2>
+                            <table>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Side</th>
+                                    <th>MAC Address</th>
+                                </tr>
+                                ${portList}
+                            </table>
+                        </div>
+                    `
+                );
+                nodeWindows[node.id]!.addEventListener("close", () => {nodeWindows[node.id] = null});
+            }
+        });
         
         hud.appendButton(pauseButton);
         hud.appendButton(stepButton);

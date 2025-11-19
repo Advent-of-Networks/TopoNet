@@ -3,13 +3,20 @@ import { Connection } from "./Connection";
 import { TransitUnit } from "./TransitUnit";
 
 export enum PortSide {
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST,
+    NORTH = "NORTH",
+    EAST = "EAST",
+    SOUTH = "SOUTH",
+    WEST = "WEST",
 }
 
+type MacAddress = [number, number, number, number, number, number];
+
 export class Port {
+    
+    private static nextId: number = 1;
+    id: number;
+    mac: MacAddress;
+
     node: NetworkNode;
     side: PortSide;
     connection: Connection | null = null;
@@ -21,6 +28,16 @@ export class Port {
     constructor(node: NetworkNode, side: PortSide) {
         this.node = node;
         this.side = side;
+        this.id = Port.nextId++;
+
+        this.mac = [
+            0x06, 
+            0xCA, 
+            0xFE, 
+            ((this.id >> 16) & 0xFF) ^ 0x8A,
+            ((this.id >> 8) & 0xFF) ^ 0x25,
+            (this.id & 0xFF) ^ 0xC1,
+        ];
     }
 
     connect(connection: Connection) {

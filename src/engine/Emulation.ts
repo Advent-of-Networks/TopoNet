@@ -6,7 +6,13 @@ interface PauseEventDetails {
     paused: boolean;
 }
 
+interface NodeClickedEventDetails {
+    node: NetworkNode;
+}
+
 export type PauseEvent = CustomEvent<PauseEventDetails>;
+
+export type NodeClickedEvent = CustomEvent<NodeClickedEventDetails>;
 
 export class Emulation extends EventTarget {
     canvas : HTMLCanvasElement;
@@ -16,6 +22,7 @@ export class Emulation extends EventTarget {
 
     hoveringNode: NetworkNode | null = null;
     draggingNode: NetworkNode | null = null;
+    dragged: boolean = false;
     offsetX = 0;
     offsetY = 0;
     speedFactor: number = 0.1;
@@ -71,6 +78,7 @@ export class Emulation extends EventTarget {
         if (this.draggingNode) {
             this.draggingNode.x = this.mouse.x - this.offsetX;
             this.draggingNode.y = this.mouse.y - this.offsetY;
+            this.dragged = true;
             return;
         }
 
@@ -105,6 +113,7 @@ export class Emulation extends EventTarget {
         [this.mouse.x, this.mouse.y, screenX, screenY] = this.eventToCoords(e);
         if (this.hoveringNode) {
             this.draggingNode = this.hoveringNode;
+            this.dragged = false;
             this.offsetX = this.mouse.x - this.draggingNode.x;
             this.offsetY = this.mouse.y - this.draggingNode.y;
 
@@ -122,6 +131,9 @@ export class Emulation extends EventTarget {
 
     mouseup(e: MouseEvent) {
         this.mouse.buttons = e.buttons;
+        if (this.draggingNode && !this.dragged) {
+            this.dispatchEvent(new CustomEvent<NodeClickedEventDetails>("onNodeClick", {detail: { node: this.draggingNode}}));
+        }
         this.draggingNode = null;
         this.camera.isPanning = false;
     }

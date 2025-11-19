@@ -1,6 +1,9 @@
 import { Port, PortSide } from "./Ports";
 
 export class NetworkNode {
+    private static nextId: number = 1;
+    id: number;
+
     x: number;
     y: number;
     width: number;
@@ -13,6 +16,7 @@ export class NetworkNode {
         this.y = y;
         this.width = width;
         this.height = height;
+        this.id = NetworkNode.nextId++;
     }
 
     addPort(side: PortSide): Port {
