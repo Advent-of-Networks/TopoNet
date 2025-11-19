@@ -7,6 +7,8 @@ export class Emulation {
     canvas : HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
 
+    gridSize = 100;
+
     hoveringNode: NetworkNode | null = null;
     draggingNode: NetworkNode | null = null;
     offsetX = 0;
@@ -143,22 +145,56 @@ export class Emulation {
 
     render() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = "#252D3C";
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         this.ctx.translate(this.canvas.width/2, this.canvas.height/2);
         this.ctx.scale(this.camera.zoom, this.camera.zoom);
         this.ctx.translate(this.camera.x, this.camera.y);
+        this.background();
         this.nodes.forEach(node => node.render(this.ctx));
         this.connections.forEach(connection => connection.render(this.ctx));
         this.ctx.restore();
     }
 
-    debug(ctx: CanvasRenderingContext2D) {
-        ctx.save();
-        ctx.resetTransform();
-        ctx.fillStyle = 'black';
-        ctx.font = '16px monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
+    background() {
+        this.ctx.save();
+        this.ctx.resetTransform();
+        
+        const scaledGrid = this.gridSize * this.camera.zoom;
+        const opacity = Math.min(0.5, Math.max(0.1, scaledGrid/100))*0.3;
+
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+
+        const mod = (n: number, m: number) => ((n % m) + m) % m;
+
+        const left = mod(this.camera.x * this.camera.zoom  + this.canvas.width/2, scaledGrid);
+        const top = mod(this.camera.y * this.camera.zoom  + this.canvas.height/2, scaledGrid);
+
+        for (let x = left; x < this.canvas.width; x+=scaledGrid) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.canvas.height);
+            this.ctx.stroke();
+        }
+
+        for (let y = top; y < this.canvas.height; y+=scaledGrid) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.canvas.width, y);
+            this.ctx.stroke();
+        }
+
+        this.ctx.restore();
+    }
+
+    debug() {
+        this.ctx.save();
+        this.ctx.resetTransform();
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = '16px monospace';
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'top';
 
         const lines = [
             `FPS: ${this.fps}`,
@@ -177,17 +213,17 @@ export class Emulation {
         ];
 
         lines.forEach((line, i) => {
-            ctx.fillText(line, 10, 10 + i * 18);
+            this.ctx.fillText(line, 10, 10 + i * 18);
         });
 
-        ctx.restore();
+        this.ctx.restore();
     }
 
     loop() {
         const deltaT = this.updateFPS();
         this.update(deltaT * this.speedFactor);
         this.render();
-        this.debug(this.ctx);
+        this.debug();
         requestAnimationFrame(this.loop.bind(this));
     }
 

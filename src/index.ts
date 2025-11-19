@@ -45,6 +45,7 @@ export class TopoNet extends HTMLElement {
             new NetworkNode(100, -100),
             new NetworkNode(300, 0),
             new NetworkNode(100, 100),
+            new NetworkNode(50, 50),
         ]) {
             this.emulation.nodes.push(node);
         }
@@ -57,15 +58,15 @@ export class TopoNet extends HTMLElement {
         ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
         ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
         ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[1].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[2].addPort(PortSide.NORTH));
+        ports.push(this.emulation.nodes[1].addPort(PortSide.NORTH));
+        ports.push(this.emulation.nodes[2].addPort(PortSide.EAST));
         ports.push(this.emulation.nodes[2].addPort(PortSide.WEST));
         ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
         ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
 
         for (const connection of [
-            new Connection(ports[0], ports[3]),
-            new Connection(ports[1], ports[7]),
+            new Connection(ports[1], ports[3]),
+            new Connection(ports[0], ports[7]),
             new Connection(ports[2], ports[9]),
             new Connection(ports[4], ports[8]),
             new Connection(ports[5], ports[6]),

@@ -129,6 +129,7 @@ export class UIWindowElement extends HTMLElement {
                 overflow: auto;
                 background: white;
                 margin: 3px;
+                user-select: text;
             }
         `;
 
