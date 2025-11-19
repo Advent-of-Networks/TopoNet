@@ -38,6 +38,7 @@ export class UIHUD extends HTMLElement {
                 font-family: arial;
                 box-sizing: border-box;
                 justify-content: center;
+                pointer-events: none;
             }
             #container {
                 display: flex;
@@ -54,6 +55,7 @@ export class UIHUD extends HTMLElement {
                 border-bottom: 1px solid #000;
                 align-items: center;
                 gap: ${padding}px;
+                pointer-events: auto;
             }
             .button {
                 border: none;
