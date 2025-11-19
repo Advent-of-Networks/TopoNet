@@ -146,7 +146,6 @@ export class TopoNet extends HTMLElement {
         let nodeWindows: (UIWindow | null)[] = [];
         this.emulation.addEventListener("onNodeClick", (e) => {
             const {node} = (e as NodeClickedEvent).detail;
-            console.log(node);
             if (!nodeWindows[node.id]) {
                 nodeWindows[node.id] = new UIWindow(this, `Node ${node.id}`);
                 const niclist = node.nics.map(n => (

@@ -27,7 +27,6 @@ export class UIWindowElement extends HTMLElement {
     private startTop = 0;
     private startX = 0;
     private startY = 0;
-    
 
     private boundMouseMove: (e: MouseEvent) => void;
     private boundMouseUp: (e: MouseEvent) => void;
@@ -343,6 +342,7 @@ export class UIWindow {
     private window: HTMLElement;
     private display: TopoNet;
     private content: HTMLElement | null = null;
+    private static UIWindowTopZ: number = 10000;
 
     constructor(display: TopoNet, title: string = "Window", widht: number = 600, height: number = 400) {
         if(!customElements.get("ui-window")) customElements.define('ui-window', UIWindowElement);
@@ -358,8 +358,18 @@ export class UIWindow {
         this.window.addEventListener("close", () => {
             this.display.removeElement(this.window);
         });
+
+        this.window.addEventListener("mousedown", (e) => {
+            this.toFront();
+        });
         
         this.display.append(this.window);
+        this.toFront();
+    }
+
+    toFront() {
+        //this feels super hacky. Is there a better solution?
+        this.window.style.zIndex = (++UIWindow.UIWindowTopZ).toString();
     }
 
     addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void {
