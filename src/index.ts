@@ -6,6 +6,7 @@ import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
 import { faCog, faPause, faPlay, faStepForward } from "@fortawesome/free-solid-svg-icons";
+import { formatMAC, NIC } from "./components/NIC";
 
 
 
@@ -56,16 +57,31 @@ export class TopoNet extends HTMLElement {
 
         const ports: Port[] = [];
 
-        ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[0].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[1].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[1].addPort(PortSide.NORTH));
-        ports.push(this.emulation.nodes[2].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[2].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[3].addPort(PortSide.WEST));
+        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
+        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
+        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
+        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
+        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
+        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
+        this.emulation.nodes[2].addNIC(new NIC(this.emulation.nodes[2]));
+        this.emulation.nodes[2].addNIC(new NIC(this.emulation.nodes[2]));
+        this.emulation.nodes[3].addNIC(new NIC(this.emulation.nodes[3]));
+        this.emulation.nodes[3].addNIC(new NIC(this.emulation.nodes[3]));
+
+        this.emulation.nodes[4].addNIC(new NIC(this.emulation.nodes[4]));
+
+        ports.push(this.emulation.nodes[0].nics[0].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[0].nics[1].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[0].nics[2].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[1].nics[0].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[1].nics[1].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[1].nics[2].addPort(PortSide.NORTH));
+        ports.push(this.emulation.nodes[2].nics[0].addPort(PortSide.EAST));
+        ports.push(this.emulation.nodes[2].nics[1].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[3].nics[0].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[3].nics[1].addPort(PortSide.WEST));
+
+        ports.push(this.emulation.nodes[4].nics[0].addPort(PortSide.WEST));
 
         for (const connection of [
             new Connection(ports[1], ports[3]),
@@ -130,22 +146,34 @@ export class TopoNet extends HTMLElement {
         let nodeWindows: (UIWindow | null)[] = [];
         this.emulation.addEventListener("onNodeClick", (e) => {
             const {node} = (e as NodeClickedEvent).detail;
+            console.log(node);
             if (!nodeWindows[node.id]) {
                 nodeWindows[node.id] = new UIWindow(this, `Node ${node.id}`);
-                const portList = node.ports
-                    .map(port => (
-                        `<tr>
-                            <td>${port.id}</td>
-                            <td>${port.side}</td>
-                            <td>${port.mac.map(b => b.toString(16).padStart(2, "0")).join(":").toUpperCase()}</td>
-                        </tr>`
-                    ))
-                    .join("");
+                const niclist = node.nics.map(n => (
+                    `
+                        <tr>
+                            <td>${n.id}</td>
+                            <td>${formatMAC(n.mac)}</td>
+                        </tr>
+                    `
+                )).join("");
+                const portList = node.nics.map(n => (
+                    n.ports.map(p => (
+                        `
+                            <tr>
+                                <td>${p.id}</td>
+                                <td>${p.side}</td>
+                                <td>${p.connection ? `<span style="color: #60C851">Connected</span>` : `<span style="color: #F24848">Disconnected</span>`}</td>
+                            </tr>
+                        `
+                    )).join("")
+                )).join("");
+                
                 nodeWindows[node.id]!.setContent(
                     `
                         <style>
                             #content {
-                                padding: 0px 20px 0px 20px;
+                                padding: 0px 20px 20px 20px;
                             }
                             table {
                                 border-collapse: collapse;
@@ -166,12 +194,20 @@ export class TopoNet extends HTMLElement {
                         </style>
                         <div id="content">
                             <h1>Node ${node.id}</h1>
-                            <h2>Ports:</h2>
+                            <h2>NICs (Data-Link Layer):</h2>
+                            <table>
+                                <tr>
+                                    <th>#</th>
+                                    <th>MAC Address</th>
+                                </tr>
+                                ${niclist}
+                            </table>
+                            <h2>Ports (Physical Layer):</h2>
                             <table>
                                 <tr>
                                     <th>#</th>
                                     <th>Side</th>
-                                    <th>MAC Address</th>
+                                    <th>State</th>
                                 </tr>
                                 ${portList}
                             </table>

@@ -25,10 +25,10 @@ export class TransitUnit {
         const start = this.forward ? this.connection.from : this.connection.to;
         const end   = this.forward ? this.connection.to : this.connection.from;
 
-        const x1 = start.node.x + start.offsetX;
-        const y1 = start.node.y + start.offsetY;
-        const x4 = end.node.x   + end.offsetX;
-        const y4 = end.node.y   + end.offsetY;
+        const x1 = start.nic.node.x + start.offsetX;
+        const y1 = start.nic.node.y + start.offsetY;
+        const x4 = end.nic.node.x   + end.offsetX;
+        const y4 = end.nic.node.y   + end.offsetY;
 
         let cp1X = x1, cp1Y = y1;
         let cp2X = x4, cp2Y = y4;

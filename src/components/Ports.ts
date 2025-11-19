@@ -1,6 +1,7 @@
 import { NetworkNode } from "./NetworkNode";
 import { Connection } from "./Connection";
 import { TransitUnit } from "./TransitUnit";
+import { NIC } from "./NIC";
 
 export enum PortSide {
     NORTH = "NORTH",
@@ -9,15 +10,12 @@ export enum PortSide {
     WEST = "WEST",
 }
 
-type MacAddress = [number, number, number, number, number, number];
-
 export class Port {
     
     private static nextId: number = 1;
     id: number;
-    mac: MacAddress;
 
-    node: NetworkNode;
+    nic: NIC;
     side: PortSide;
     connection: Connection | null = null;
     offsetX: number = 0;
@@ -25,19 +23,10 @@ export class Port {
     height: number = 10;
     width: number = 10;
 
-    constructor(node: NetworkNode, side: PortSide) {
-        this.node = node;
+    constructor(nic: NIC, side: PortSide) {
+        this.nic = nic;
         this.side = side;
         this.id = Port.nextId++;
-
-        this.mac = [
-            0x06, 
-            0xCA, 
-            0xFE, 
-            ((this.id >> 16) & 0xFF) ^ 0x8A,
-            ((this.id >> 8) & 0xFF) ^ 0x25,
-            (this.id & 0xFF) ^ 0xC1,
-        ];
     }
 
     connect(connection: Connection) {
@@ -59,6 +48,6 @@ export class Port {
 
     render(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = 'black';
-        ctx.fillRect(this.node.x - this.width/2 + this.offsetX, this.node.y - this.height/2 + this.offsetY, 10, 10);
+        ctx.fillRect(this.nic.node.x - this.width/2 + this.offsetX, this.nic.node.y - this.height/2 + this.offsetY, 10, 10);
     }
 }
