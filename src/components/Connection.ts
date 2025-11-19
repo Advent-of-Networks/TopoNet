@@ -54,8 +54,8 @@ export class Connection {
             case PortSide.EAST: cp2X += offset; break;
         }
 
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#3333aa";
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
