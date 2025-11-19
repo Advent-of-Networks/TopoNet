@@ -28,10 +28,10 @@ export class Connection {
     }
 
     render(ctx: CanvasRenderingContext2D) {
-        const startX = this.from.node.x + this.from.offsetX;
-        const startY = this.from.node.y + this.from.offsetY;
-        const endX = this.to.node.x + this.to.offsetX;
-        const endY = this.to.node.y + this.to.offsetY;
+        const startX = this.from.nic.node.x + this.from.offsetX;
+        const startY = this.from.nic.node.y + this.from.offsetY;
+        const endX = this.to.nic.node.x + this.to.offsetX;
+        const endY = this.to.nic.node.y + this.to.offsetY;
 
         let cp1X = startX;
         let cp1Y = startY;
