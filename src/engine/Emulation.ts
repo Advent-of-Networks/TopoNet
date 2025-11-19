@@ -19,6 +19,8 @@ export class Emulation {
     lastFrameTime = this.startTime;
     fps = 0;
 
+    debugMode: boolean = false;
+
     mouse = new Mouse();
     camera = new Camera();
 
@@ -189,6 +191,7 @@ export class Emulation {
     }
 
     debug() {
+        if(!this.debugMode) return;
         this.ctx.save();
         this.ctx.resetTransform();
         this.ctx.fillStyle = 'white';

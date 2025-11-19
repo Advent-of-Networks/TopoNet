@@ -82,7 +82,7 @@ export class UIWindowElement extends HTMLElement {
                 background: rgba(255, 255, 255, 1);
                 border-radius: 5px 5px 0 0;
                 box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-                background: #333;
+                background: #222226;
                 border: 1px solid #000;
                 user-select: none;
                 font-family: arial;
@@ -95,10 +95,10 @@ export class UIWindowElement extends HTMLElement {
                 border-radius: 5px 5px 0 0;
                 box-sizing: border-box;
                 overflow: hidden;
-                border-top: 1px solid #888;
+                border-top: 1px solid #373737;
             }
             #topbar {
-                background: #333;
+                background: #222226;
                 border-radius: 5px 5px 0 0;
                 color: #eee;
                 padding: 6px 10px 3px 10px;
@@ -114,7 +114,7 @@ export class UIWindowElement extends HTMLElement {
                 border-radius: 100%;
                 height: 20px;
                 width: 20px;
-                padding: 6px 5px 5px 6px;
+                padding: 5.5px 5px 5px 5.5px;
                 box-shadow: 0 0 2px rgba(255,255,255,0.4);
                 display: flex;
                 justify-content: center;
@@ -130,6 +130,8 @@ export class UIWindowElement extends HTMLElement {
                 background: white;
                 margin: 3px;
                 user-select: text;
+                background: #2e2e33;
+                color: #eee;
             }
         `;
 
@@ -322,13 +324,29 @@ export class UIWindowElement extends HTMLElement {
 }
 
 
+export class UIWindowContent extends HTMLElement {
+    
+    private shadow: ShadowRoot;
+
+    constructor() {
+        super();
+        this.shadow = this.attachShadow({ mode: "open" });
+    }
+    
+    connectedCallback() {
+        this.shadow.innerHTML = this.getAttribute("content") || "";
+    }
+}
+
 export class UIWindow {
 
     private window: HTMLElement;
     private display: TopoNet;
+    private content: HTMLElement | null = null;
 
     constructor(display: TopoNet, title: string = "Window", widht: number = 600, height: number = 400) {
         if(!customElements.get("ui-window")) customElements.define('ui-window', UIWindowElement);
+        if(!customElements.get("ui-window-content")) customElements.define('ui-window-content', UIWindowContent);
 
         this.display = display;
 
@@ -344,8 +362,18 @@ export class UIWindow {
         this.display.append(this.window);
     }
 
+    addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void {
+        this.window.addEventListener(type, listener);
+    }
+
     setContent(content: string) {
-        this.window.innerHTML = content;
+        this.content = document.createElement("ui-window-content");
+        this.content.setAttribute("content", content);
+        this.window.innerHTML = "";
+        this.window.append(this.content);
     }
     
+    getContent() {
+        return this.content;
+    }
 }

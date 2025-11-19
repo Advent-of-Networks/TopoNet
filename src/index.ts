@@ -3,6 +3,9 @@ import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
 import { Emulation } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
+import { HUD, HUDButton } from "./engine/ui/HUD";
+import { icon } from "@fortawesome/fontawesome-svg-core";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
 
 
 
@@ -74,6 +77,38 @@ export class TopoNet extends HTMLElement {
             this.emulation.connections.push(connection);
         }
 
+
+        let settingsWindow: UIWindow | null = null;
+        const hud = new HUD(this);
+        const settingsIcon = icon(faCog).node[0] as SVGElement;
+        const settingsButton = new HUDButton(settingsIcon, (e) => {
+            if (!settingsWindow) {
+                settingsWindow = new UIWindow(this, "Settings");
+                settingsWindow.setContent(
+                    `
+                        <style>
+                            #content {
+                                padding: 0px 20px 0px 20px;
+                            }
+                        </style>
+                        <div id="content">
+                            <h1>Settings</h1>
+                            <h2>Debug</h2>
+                            <p>Enable: <input id="debug-mode" type="checkbox" ${this.emulation.debugMode && 'checked'} /></p>
+                        </div>
+                    `
+                );
+                settingsWindow.addEventListener("close", () => {settingsWindow = null});
+                const content = settingsWindow.getContent();
+                const debugModeBox = content?.shadowRoot?.querySelector("#debug-mode");
+                debugModeBox?.addEventListener("change", (e) => {
+                    const target = e.target as HTMLInputElement;
+                    this.emulation.debugMode = target.checked;
+                });
+            }
+        });
+        hud.appendButton(settingsButton);
+
         this.emulation.start();
     }
 
@@ -100,23 +135,24 @@ if (!customElements.get("toponet-element")) {
 const toponet = document.getElementById("toponet")! as TopoNet;
 
 const welcome = new UIWindow(toponet, "Welcome");
-        welcome.setContent(
-            `
-                <style>
-                    .center {
-                        display: flex;
-                        flex-direction: column;
-                        text-align: center;
-                        padding: 10px;
-                    }
-                </style>
-                <div class="center">
-                    <h1>Welcome to TopoNet</h1>
-                    <p>
-                        TopoNet is a web-based networking simulator for educational purposes.
-                        We are currently heavily in development, but expect to be fully functional by the end of 2026.
-                        By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
-                    </p>
-                </div>
-            `
-        );
+welcome.setContent(
+    `
+        <style>
+            .center {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                padding: 10px;
+            }
+        </style>
+        <div class="center">
+            <h1>Welcome to TopoNet</h1>
+            <p>
+                TopoNet is a web-based networking simulator for educational purposes.
+                We are currently heavily in development, but expect to be fully functional by the end of 2026.
+                By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
+            </p>
+        </div>
+    `
+);
+welcome.addEventListener("close", () => {});
