@@ -1,7 +1,9 @@
+import { Emulation } from "../engine/Emulation";
+import { EthernetFrame, EthernetFrameType } from "./EthernetFrame";
 import { NetworkNode } from "./NetworkNode";
-import { Port, PortSide } from "./Ports";
-
-type MacAddress = [number, number, number, number, number, number];
+import { Port } from "./Ports";
+import { TransitUnit } from "./TransitUnit";
+import { Direction, MacAddress } from "./types";
 
 export function formatMAC(address: MacAddress) {
     return address.map(b => b.toString(16).padStart(2, "0")).join(":").toUpperCase();
@@ -12,14 +14,20 @@ export class NIC {
     private static nextId: number = 0;
     id: number;
 
+    emulation: Emulation;
+
     mac: MacAddress;
 
     ports: Port[] = [];
     node: NetworkNode;
 
-    constructor(node: NetworkNode) {
+    forward: boolean = false;
+
+    constructor(emulation: Emulation, node: NetworkNode) {
         this.node = node;
         this.id = NIC.nextId++;
+
+        this.emulation = emulation;
         
         this.mac = [
             0x06, 
@@ -31,15 +39,27 @@ export class NIC {
         ];
     }
 
-    addPort(side: PortSide): Port {
-        const port = new Port(this, side);
+    addPort(side: Direction): Port {
+        const port = new Port(this.emulation, this, side);
         this.ports.push(port);
         this.node.adjustPortsOnSide(side);
         return port;
     }
 
-    send() {
+    send(dstMac: MacAddress) {
+        const frame = new EthernetFrame(dstMac, this.mac,EthernetFrameType.EXPERIMENTAL1);
         // TODO: if there is more than one port, use ARP Table (switches only)
-        this.ports[0].send();
+        this.ports[0].send(frame);
+    }
+
+    receive(transmitUnit: TransitUnit) {
+        const {frame} = transmitUnit;
+        if (this.forward) {
+            for (const port of this.ports) {
+                const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
+                if (port === receiver) continue;
+                port.send(frame);
+            }
+        }
     }
 }

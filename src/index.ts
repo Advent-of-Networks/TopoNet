@@ -1,12 +1,18 @@
-import { Port, PortSide } from "./components/Ports";
+import { PacketSentEvent, Port } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
 import { Emulation, NodeClickedEvent, PauseEvent } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
-import { faCog, faPause, faPlay, faStepForward } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faPause, faPlay, faProjectDiagram, faStepForward } from "@fortawesome/free-solid-svg-icons";
 import { formatMAC, NIC } from "./components/NIC";
+import { TransitUnit } from "./components/TransitUnit";
+import { ethernetFrameTypeNames } from "./components/EthernetFrame";
+import { Iface } from "./components/Iface";
+import { Computer } from "./components/Computer";
+import { Direction } from "./components/types";
+import { Hub } from "./components/Hub";
 
 
 
@@ -45,11 +51,10 @@ export class TopoNet extends HTMLElement {
 
 
         for (const node of [
-            new NetworkNode(-100, -100),
-            new NetworkNode(100, -100),
-            new NetworkNode(300, 0),
-            new NetworkNode(100, 100),
-            new NetworkNode(50, 50),
+            new Hub(this.emulation, "Hub", 0, -75, 50, 50, Direction.NORTH),
+            new Computer(this.emulation, "Pete-PC", -100, 75),
+            new Computer(this.emulation, "Webserver", 0, 75),
+            new Computer(this.emulation, "Monica-PC", 100, 75),
         ]) {
             this.emulation.nodes.push(node);
         }
@@ -57,38 +62,22 @@ export class TopoNet extends HTMLElement {
 
         const ports: Port[] = [];
 
-        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
-        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
-        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
-        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
-        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
-        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
-        this.emulation.nodes[2].addNIC(new NIC(this.emulation.nodes[2]));
-        this.emulation.nodes[2].addNIC(new NIC(this.emulation.nodes[2]));
-        this.emulation.nodes[3].addNIC(new NIC(this.emulation.nodes[3]));
-        this.emulation.nodes[3].addNIC(new NIC(this.emulation.nodes[3]));
+        this.emulation.nodes[1].addInterface(new Iface(new NIC(this.emulation, this.emulation.nodes[1])));
+        this.emulation.nodes[2].addInterface(new Iface(new NIC(this.emulation, this.emulation.nodes[2])));
+        this.emulation.nodes[3].addInterface(new Iface(new NIC(this.emulation, this.emulation.nodes[3])));
 
-        this.emulation.nodes[4].addNIC(new NIC(this.emulation.nodes[4]));
+        ports.push(this.emulation.nodes[0].interfaces[0].nic.addPort(Direction.SOUTH));
+        ports.push(this.emulation.nodes[0].interfaces[0].nic.addPort(Direction.SOUTH));
+        ports.push(this.emulation.nodes[0].interfaces[0].nic.addPort(Direction.SOUTH));
 
-        ports.push(this.emulation.nodes[0].nics[0].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[0].nics[1].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[0].nics[2].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[1].nics[0].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[1].nics[1].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[1].nics[2].addPort(PortSide.NORTH));
-        ports.push(this.emulation.nodes[2].nics[0].addPort(PortSide.EAST));
-        ports.push(this.emulation.nodes[2].nics[1].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[3].nics[0].addPort(PortSide.WEST));
-        ports.push(this.emulation.nodes[3].nics[1].addPort(PortSide.WEST));
-
-        ports.push(this.emulation.nodes[4].nics[0].addPort(PortSide.WEST));
+        ports.push(this.emulation.nodes[1].interfaces[0].nic.addPort(Direction.NORTH));
+        ports.push(this.emulation.nodes[2].interfaces[0].nic.addPort(Direction.NORTH));
+        ports.push(this.emulation.nodes[3].interfaces[0].nic.addPort(Direction.NORTH));
 
         for (const connection of [
-            new Connection(ports[1], ports[3]),
-            new Connection(ports[0], ports[7]),
-            new Connection(ports[2], ports[9]),
-            new Connection(ports[4], ports[8]),
-            new Connection(ports[5], ports[6]),
+            new Connection(ports[0], ports[3]),
+            new Connection(ports[1], ports[4]),
+            new Connection(ports[2], ports[5]),
         ]) {
             this.emulation.connections.push(connection);
         }
@@ -143,21 +132,77 @@ export class TopoNet extends HTMLElement {
             stepButton.setDisabled(!this.emulation.paused);
         })
 
+
+        let netlensWindow: UIWindow | null = null;
+        let units: TransitUnit[] = [];
+        const netlensIcon = icon(faProjectDiagram).node[0] as SVGElement;
+        const packet2entry = (p: TransitUnit) => (`
+                <td>${p.id}</td>
+                <td>${formatMAC(p.frame.srcMac)}</td>
+                <td>${formatMAC(p.frame.dstMac)}</td>
+                <td>${ethernetFrameTypeNames[p.frame.type]}</td>
+            `);
+        const netlensButton = new HUDButton(netlensIcon, (e) => {
+            if (!netlensWindow) {
+                netlensWindow = new UIWindow(this, "NetLens");
+                const unitlist = units.map(p => `<tr>${packet2entry(p)}</tr>`).join("");
+                netlensWindow.setContent(`
+                        <h1>NetLens</h1>
+                        <table id="packetlist">
+                            <tr>
+                                <th>#</th>
+                                <th>src MAC</th>
+                                <th>dst MAC</th>
+                                <th>type</th>
+                            </tr>
+                            ${unitlist}
+                        </table>
+                    `);
+                const content = netlensWindow.getContent();
+                const packetlistTable = content?.shadowRoot?.querySelector("#packetlist");
+                const packetSentHandler: EventListener = (e) => {
+                    const { transitUnit } = (e as PacketSentEvent).detail;
+                    const entry = document.createElement("tr");
+                    entry.innerHTML = packet2entry(transitUnit);
+                    packetlistTable?.appendChild(entry);
+                };
+                this.emulation.addEventListener("packetSent", packetSentHandler);
+                netlensWindow.addEventListener("close", () => {
+                    netlensWindow = null
+                    this.emulation.removeEventListener("packetSent", packetSentHandler);
+                });
+            }
+        });
+
+        this.emulation.addEventListener("packetSent", (e) => {
+            const { transitUnit } = (e as PacketSentEvent).detail;
+            units.push(transitUnit);
+        });
+
         let nodeWindows: (UIWindow | null)[] = [];
         this.emulation.addEventListener("onNodeClick", (e) => {
             const {node} = (e as NodeClickedEvent).detail;
             if (!nodeWindows[node.id]) {
-                nodeWindows[node.id] = new UIWindow(this, `Node ${node.id}`);
-                const niclist = node.nics.map(n => (
+                nodeWindows[node.id] = new UIWindow(this, `${node.name}`);
+                // TODO: this can be optimized to one iteration.
+                const ifacelist = node.interfaces.map(i => (
                     `
                         <tr>
-                            <td>${n.id}</td>
-                            <td>${formatMAC(n.mac)}</td>
+                            <td>${i.id}</td>
+                            <td>${i.nic.id}</td>
                         </tr>
                     `
                 )).join("");
-                const portList = node.nics.map(n => (
-                    n.ports.map(p => (
+                const niclist = node.interfaces.map(i => (
+                    `
+                        <tr>
+                            <td>${i.nic.id}</td>
+                            <td>${formatMAC(i.nic.mac)}</td>
+                        </tr>
+                    `
+                )).join("");
+                const portList = node.interfaces.map(i => (
+                    i.nic.ports.map(p => (
                         `
                             <tr>
                                 <td>${p.id}</td>
@@ -181,28 +226,43 @@ export class TopoNet extends HTMLElement {
                                 border: 1px solid #454545;
                                 padding: 10px 20px;
                             }
-                            th {
+                            .table th {
                                 background: #555555;
                             }
-                            tr {
+                            .table tr {
                                 background: #393939;
                             }
-                            tr:nth-child(odd) {
+                            .table tr:nth-child(odd) {
                                 background: #222222;
                             }
                         </style>
                         <div id="content">
-                            <h1>Node ${node.id}</h1>
-                            <h2>NICs (Data-Link Layer):</h2>
+                            <h1>${node.name}</h1>
+                            <h2>Host:</h2>
                             <table>
+                                <tr>
+                                    <td>Hostname: </td>
+                                    <td>${node.name}</td>
+                                </tr>
+                            </table>
+                            <h3>Interfaces</h3>
+                            <table class="table">
+                                <tr>
+                                    <th>#</th>
+                                    <th>NIC</th>
+                                </tr>
+                                ${ifacelist}
+                            </table>
+                            <h2>NICs:</h2>
+                            <table class="table">
                                 <tr>
                                     <th>#</th>
                                     <th>MAC Address</th>
                                 </tr>
                                 ${niclist}
                             </table>
-                            <h2>Ports (Physical Layer):</h2>
-                            <table>
+                            <h2>Ports:</h2>
+                            <table class="table">
                                 <tr>
                                     <th>#</th>
                                     <th>Side</th>
@@ -219,6 +279,7 @@ export class TopoNet extends HTMLElement {
         
         hud.appendButton(pauseButton);
         hud.appendButton(stepButton);
+        hud.appendButton(netlensButton);
         hud.appendButton(settingsButton);
 
         this.emulation.start();
@@ -246,25 +307,25 @@ if (!customElements.get("toponet-element")) {
 
 const toponet = document.getElementById("toponet")! as TopoNet;
 
-const welcome = new UIWindow(toponet, "Welcome");
-welcome.setContent(
-    `
-        <style>
-            .center {
-                display: flex;
-                flex-direction: column;
-                text-align: center;
-                padding: 10px;
-            }
-        </style>
-        <div class="center">
-            <h1>Welcome to TopoNet</h1>
-            <p>
-                TopoNet is a web-based networking simulator for educational purposes.
-                We are currently heavily in development, but expect to be fully functional by the end of 2026.
-                By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
-            </p>
-        </div>
-    `
-);
-welcome.addEventListener("close", () => {});
+// const welcome = new UIWindow(toponet, "Welcome");
+// welcome.setContent(
+//     `
+//         <style>
+//             .center {
+//                 display: flex;
+//                 flex-direction: column;
+//                 text-align: center;
+//                 padding: 10px;
+//             }
+//         </style>
+//         <div class="center">
+//             <h1>Welcome to TopoNet</h1>
+//             <p>
+//                 TopoNet is a web-based networking simulator for educational purposes.
+//                 We are currently heavily in development, but expect to be fully functional by the end of 2026.
+//                 By the end of 2026 there will also be a big surprise waiting for you. Stay tuned by giving us a star on <a target="_blank" href="https://github.com/Advent-of-Networks/TopoNet">GitHub</a>
+//             </p>
+//         </div>
+//     `
+// );
+// welcome.addEventListener("close", () => {});

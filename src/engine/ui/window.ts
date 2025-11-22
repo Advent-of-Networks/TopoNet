@@ -231,7 +231,6 @@ export class UIWindowElement extends HTMLElement {
         }
 
         if (this.resizing) {
-            console.log(this.resizeDirection);
             const dx = e.clientX - this.startX;
             const dy = e.clientY - this.startY;
 

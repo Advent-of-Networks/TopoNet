@@ -1,32 +1,35 @@
-import { NetworkNode } from "./NetworkNode";
 import { Connection } from "./Connection";
-import { TransitUnit } from "./TransitUnit";
 import { NIC } from "./NIC";
-
-export enum PortSide {
-    NORTH = "NORTH",
-    EAST = "EAST",
-    SOUTH = "SOUTH",
-    WEST = "WEST",
+import { Emulation } from "../engine/Emulation";
+import { TransitUnit } from "./TransitUnit";
+import { EthernetFrame } from "./EthernetFrame";
+import { Direction } from "./types";
+interface PacketSentEventDetails {
+    transitUnit: TransitUnit;
 }
+
+export type PacketSentEvent = CustomEvent<PacketSentEventDetails>;
 
 export class Port {
     
     private static nextId: number = 1;
     id: number;
 
+    emulation: Emulation;
+
     nic: NIC;
-    side: PortSide;
+    side: Direction;
     connection: Connection | null = null;
     offsetX: number = 0;
     offsetY: number = 0;
     height: number = 10;
     width: number = 10;
 
-    constructor(nic: NIC, side: PortSide) {
+    constructor(emulation: Emulation, nic: NIC, side: Direction) {
         this.nic = nic;
         this.side = side;
         this.id = Port.nextId++;
+        this.emulation = emulation;
     }
 
     connect(connection: Connection) {
@@ -37,13 +40,15 @@ export class Port {
         this.connection = null;
     }
 
-    send() {
+    send(frame: EthernetFrame) {
         if (!this.connection) throw new Error("This port is not connected!");
-        this.connection.addTransitUnit(new TransitUnit(this.connection, this.connection.from === this));
+        const transitUnit = new TransitUnit(frame, this.connection, this.connection.from === this);
+        this.connection.addTransitUnit(transitUnit);
+        this.emulation.emit(new CustomEvent<PacketSentEventDetails>("packetSent", {detail: { transitUnit }}));
     }
 
-    receive() {
-
+    receive(transitUnit: TransitUnit) {
+        this.nic.receive(transitUnit);
     }
 
     render(ctx: CanvasRenderingContext2D) {

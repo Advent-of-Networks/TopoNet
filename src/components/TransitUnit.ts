@@ -1,15 +1,22 @@
 import { pointOnBezier } from "../lib/bezier";
 import { Connection } from "./Connection";
-import { PortSide } from "./Ports";
+import { EthernetFrame } from "./EthernetFrame";
+import { Direction } from "./types";
 
 export class TransitUnit {
+
+    private static nextId: number = 0;
+    id: number;
 
     progress: number = 0;
     
     constructor(
+        public frame: EthernetFrame,
         public connection: Connection,
         public forward: boolean = true
-    ) {}
+    ) {
+        this.id = TransitUnit.nextId++;
+    }
 
     update(deltaT: number) {
         const deltaP = (deltaT) / this.connection.delay;
@@ -17,7 +24,7 @@ export class TransitUnit {
         if (this.progress > 1) {
             const receiver = this.forward ? this.connection.to : this.connection.from;
             this.connection.removeTransitUnit(this);
-            receiver.receive();
+            receiver.receive(this);
         }
     }
 
@@ -36,17 +43,17 @@ export class TransitUnit {
         const offset = 50;
 
         switch(start.side) {
-            case PortSide.NORTH: cp1Y -= offset; break;
-            case PortSide.SOUTH: cp1Y += offset; break;
-            case PortSide.WEST:  cp1X -= offset; break;
-            case PortSide.EAST:  cp1X += offset; break;
+            case Direction.NORTH: cp1Y -= offset; break;
+            case Direction.SOUTH: cp1Y += offset; break;
+            case Direction.WEST:  cp1X -= offset; break;
+            case Direction.EAST:  cp1X += offset; break;
         }
 
         switch(end.side) {
-            case PortSide.NORTH: cp2Y -= offset; break;
-            case PortSide.SOUTH: cp2Y += offset; break;
-            case PortSide.WEST:  cp2X -= offset; break;
-            case PortSide.EAST:  cp2X += offset; break;
+            case Direction.NORTH: cp2Y -= offset; break;
+            case Direction.SOUTH: cp2Y += offset; break;
+            case Direction.WEST:  cp2X -= offset; break;
+            case Direction.EAST:  cp2X += offset; break;
         }
 
         const t = this.progress;
