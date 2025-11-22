@@ -1,8 +1,9 @@
 import { Emulation } from "../engine/Emulation";
 import { EthernetFrame, EthernetFrameType } from "./EthernetFrame";
 import { NetworkNode } from "./NetworkNode";
-import { Port, PortSide } from "./Ports";
-import { MacAddress } from "./types";
+import { Port } from "./Ports";
+import { TransitUnit } from "./TransitUnit";
+import { Direction, MacAddress } from "./types";
 
 export function formatMAC(address: MacAddress) {
     return address.map(b => b.toString(16).padStart(2, "0")).join(":").toUpperCase();
@@ -20,6 +21,8 @@ export class NIC {
     ports: Port[] = [];
     node: NetworkNode;
 
+    forward: boolean = false;
+
     constructor(emulation: Emulation, node: NetworkNode) {
         this.node = node;
         this.id = NIC.nextId++;
@@ -36,7 +39,7 @@ export class NIC {
         ];
     }
 
-    addPort(side: PortSide): Port {
+    addPort(side: Direction): Port {
         const port = new Port(this.emulation, this, side);
         this.ports.push(port);
         this.node.adjustPortsOnSide(side);
@@ -49,7 +52,14 @@ export class NIC {
         this.ports[0].send(frame);
     }
 
-    receive(frame: EthernetFrame) {
-        console.log(frame);
+    receive(transmitUnit: TransitUnit) {
+        const {frame} = transmitUnit;
+        if (this.forward) {
+            for (const port of this.ports) {
+                const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
+                if (port === receiver) continue;
+                port.send(frame);
+            }
+        }
     }
 }

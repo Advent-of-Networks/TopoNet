@@ -1,6 +1,7 @@
 import { Emulation } from "../engine/Emulation";
-import { NIC } from "./NIC";
-import { Port, PortSide } from "./Ports";
+import { Iface } from "./Iface";
+import { Port } from "./Ports";
+import { Direction } from "./types";
 
 export class NetworkNode {
     private static nextId: number = 1;
@@ -13,25 +14,28 @@ export class NetworkNode {
     width: number;
     height: number;
     isHovered: boolean = false;
-    nics: NIC[] = [];
+    interfaces: Iface[] = [];
 
-    hostname: string;
+    name: string;
+    labelDirection: Direction;
 
-    constructor(emulation: Emulation, hostname: string, x:number, y: number, width: number = 50, height: number = 50) {
+    constructor(emulation: Emulation, name: string, x:number, y: number, width: number = 50, height: number = 50, labelDirection = Direction.SOUTH) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.id = NetworkNode.nextId++;
         this.emulation = emulation;
-        this.hostname = hostname;
+        this.name = name;
+        this.labelDirection = labelDirection;
     }
 
     
 
     update(deltaT: number) {
-        const p = 6 * deltaT / 20000;
-        for(const nic of this.nics) {
+        const p = 6 * deltaT / 5000;
+        for(const iface of this.interfaces) {
+            const nic = iface.nic;
             if (Math.random() < p) {
                 if (nic.ports[0].connection) {
                     const connection = nic.ports[0].connection;
@@ -50,7 +54,8 @@ export class NetworkNode {
             ctx.lineWidth = 3;
             ctx.strokeRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
         }
-        for (const nic of this.nics) {
+        for (const iface of this.interfaces) {
+            const nic = iface.nic;
             for (const port of nic.ports) {
                 port.render(ctx);
             }
@@ -59,11 +64,21 @@ export class NetworkNode {
         ctx.textBaseline = "middle";
         ctx.fillStyle = "white";
         ctx.font = "bold 10pt Arial";
-        ctx.fillText(this.hostname, this.x, this.y + this.height/2 + 10);
+        switch (this.labelDirection) {
+            case Direction.NORTH:
+                ctx.fillText(this.name, this.x, this.y - this.height/2 - 10);
+                break;
+            case Direction.SOUTH:
+                ctx.fillText(this.name, this.x, this.y + this.height/2 + 10);
+                break;
+            case Direction.EAST:
+            case Direction.WEST:
+                ctx.fillText(this.name, this.x, this.y);
+        }
     }
 
-    addNIC(nic: NIC) {
-        this.nics.push(nic);
+    addInterface(iface: Iface) {
+        this.interfaces.push(iface);
     }
 
     contains(px: number, py: number) {
@@ -75,10 +90,11 @@ export class NetworkNode {
         );
     }
 
-    adjustPortsOnSide(side: PortSide) {
+    adjustPortsOnSide(side: Direction) {
 
         const portsOnSide: Port[] = [];
-        for (let nic of this.nics) {
+        for (let iface of this.interfaces) {
+            const nic = iface.nic;
             for(let port of nic.ports) {
                 if (port.side != side) continue;
                 portsOnSide.push(port);
@@ -88,7 +104,7 @@ export class NetworkNode {
 
 
         switch (side) {
-            case PortSide.NORTH: {
+            case Direction.NORTH: {
                 const dx = this.width/(numPorts+1);
                 let x = -this.width/2;
                 for (let i = 0; i < numPorts; i++) {
@@ -97,7 +113,7 @@ export class NetworkNode {
                 }
                 break;
             }
-        case PortSide.EAST: {
+            case Direction.EAST: {
                 const dy = this.height/(numPorts+1);
                 let y = -this.height/2;
                 for (let i = 0; i < numPorts; i++) {
@@ -106,7 +122,7 @@ export class NetworkNode {
                 }
                 break;
             }
-            case PortSide.SOUTH: {
+            case Direction.SOUTH: {
                 const dx = this.width/(numPorts+1);
                 let x = -this.width/2;
                 for (let i = 0; i < numPorts; i++) {
@@ -115,7 +131,7 @@ export class NetworkNode {
                 }
                 break;
             }
-        case PortSide.WEST: {
+        case Direction.WEST: {
                 const dy = this.height/(numPorts+1);
                 let y = -this.height/2;
                 for (let i = 0; i < numPorts; i++) {

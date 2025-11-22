@@ -3,14 +3,7 @@ import { NIC } from "./NIC";
 import { Emulation } from "../engine/Emulation";
 import { TransitUnit } from "./TransitUnit";
 import { EthernetFrame } from "./EthernetFrame";
-
-export enum PortSide {
-    NORTH = "NORTH",
-    EAST = "EAST",
-    SOUTH = "SOUTH",
-    WEST = "WEST",
-}
-
+import { Direction } from "./types";
 interface PacketSentEventDetails {
     transitUnit: TransitUnit;
 }
@@ -25,14 +18,14 @@ export class Port {
     emulation: Emulation;
 
     nic: NIC;
-    side: PortSide;
+    side: Direction;
     connection: Connection | null = null;
     offsetX: number = 0;
     offsetY: number = 0;
     height: number = 10;
     width: number = 10;
 
-    constructor(emulation: Emulation, nic: NIC, side: PortSide) {
+    constructor(emulation: Emulation, nic: NIC, side: Direction) {
         this.nic = nic;
         this.side = side;
         this.id = Port.nextId++;
@@ -55,7 +48,7 @@ export class Port {
     }
 
     receive(transitUnit: TransitUnit) {
-        this.nic.receive(transitUnit.frame);
+        this.nic.receive(transitUnit);
     }
 
     render(ctx: CanvasRenderingContext2D) {

@@ -1,7 +1,7 @@
 import { pointOnBezier } from "../lib/bezier";
 import { Connection } from "./Connection";
 import { EthernetFrame } from "./EthernetFrame";
-import { PortSide } from "./Ports";
+import { Direction } from "./types";
 
 export class TransitUnit {
 
@@ -43,17 +43,17 @@ export class TransitUnit {
         const offset = 50;
 
         switch(start.side) {
-            case PortSide.NORTH: cp1Y -= offset; break;
-            case PortSide.SOUTH: cp1Y += offset; break;
-            case PortSide.WEST:  cp1X -= offset; break;
-            case PortSide.EAST:  cp1X += offset; break;
+            case Direction.NORTH: cp1Y -= offset; break;
+            case Direction.SOUTH: cp1Y += offset; break;
+            case Direction.WEST:  cp1X -= offset; break;
+            case Direction.EAST:  cp1X += offset; break;
         }
 
         switch(end.side) {
-            case PortSide.NORTH: cp2Y -= offset; break;
-            case PortSide.SOUTH: cp2Y += offset; break;
-            case PortSide.WEST:  cp2X -= offset; break;
-            case PortSide.EAST:  cp2X += offset; break;
+            case Direction.NORTH: cp2Y -= offset; break;
+            case Direction.SOUTH: cp2Y += offset; break;
+            case Direction.WEST:  cp2X -= offset; break;
+            case Direction.EAST:  cp2X += offset; break;
         }
 
         const t = this.progress;

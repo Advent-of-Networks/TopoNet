@@ -19,3 +19,10 @@ export interface IPConfig {
     ip: IPv4;
     netmask: NetworkMask;
 }
+
+export enum Direction {
+    NORTH = "NORTH",
+    EAST = "EAST",
+    SOUTH = "SOUTH",
+    WEST = "WEST",
+}
