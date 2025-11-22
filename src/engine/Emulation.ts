@@ -273,4 +273,8 @@ export class Emulation extends EventTarget {
         this.paused = !this.paused;
         this.dispatchEvent(new CustomEvent<PauseEventDetails>("pause", {detail: { paused: this.paused}}));
     }
+
+    emit(event: CustomEvent) {
+        this.dispatchEvent(event);
+    }
 }

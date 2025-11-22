@@ -1,12 +1,14 @@
-import { Port, PortSide } from "./components/Ports";
+import { PacketSentEvent, Port, PortSide } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
 import { Emulation, NodeClickedEvent, PauseEvent } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
-import { faCog, faPause, faPlay, faStepForward } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faPause, faPlay, faProjectDiagram, faStepForward } from "@fortawesome/free-solid-svg-icons";
 import { formatMAC, NIC } from "./components/NIC";
+import { TransitUnit } from "./components/TransitUnit";
+import { ethernetFrameTypeNames } from "./components/EthernetFrame";
 
 
 
@@ -45,11 +47,11 @@ export class TopoNet extends HTMLElement {
 
 
         for (const node of [
-            new NetworkNode(-100, -100),
-            new NetworkNode(100, -100),
-            new NetworkNode(300, 0),
-            new NetworkNode(100, 100),
-            new NetworkNode(50, 50),
+            new NetworkNode(this.emulation, "Peter-PC", -100, -100),
+            new NetworkNode(this.emulation, "WebServer", 100, -100),
+            new NetworkNode(this.emulation, "DNSServer", 300, 0),
+            new NetworkNode(this.emulation, "Monica-PC", 100, 100),
+            new NetworkNode(this.emulation, "Phil-PC", 50, 50),
         ]) {
             this.emulation.nodes.push(node);
         }
@@ -57,18 +59,18 @@ export class TopoNet extends HTMLElement {
 
         const ports: Port[] = [];
 
-        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
-        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
-        this.emulation.nodes[0].addNIC(new NIC(this.emulation.nodes[0]));
-        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
-        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
-        this.emulation.nodes[1].addNIC(new NIC(this.emulation.nodes[1]));
-        this.emulation.nodes[2].addNIC(new NIC(this.emulation.nodes[2]));
-        this.emulation.nodes[2].addNIC(new NIC(this.emulation.nodes[2]));
-        this.emulation.nodes[3].addNIC(new NIC(this.emulation.nodes[3]));
-        this.emulation.nodes[3].addNIC(new NIC(this.emulation.nodes[3]));
+        this.emulation.nodes[0].addNIC(new NIC(this.emulation, this.emulation.nodes[0]));
+        this.emulation.nodes[0].addNIC(new NIC(this.emulation, this.emulation.nodes[0]));
+        this.emulation.nodes[0].addNIC(new NIC(this.emulation, this.emulation.nodes[0]));
+        this.emulation.nodes[1].addNIC(new NIC(this.emulation, this.emulation.nodes[1]));
+        this.emulation.nodes[1].addNIC(new NIC(this.emulation, this.emulation.nodes[1]));
+        this.emulation.nodes[1].addNIC(new NIC(this.emulation, this.emulation.nodes[1]));
+        this.emulation.nodes[2].addNIC(new NIC(this.emulation, this.emulation.nodes[2]));
+        this.emulation.nodes[2].addNIC(new NIC(this.emulation, this.emulation.nodes[2]));
+        this.emulation.nodes[3].addNIC(new NIC(this.emulation, this.emulation.nodes[3]));
+        this.emulation.nodes[3].addNIC(new NIC(this.emulation, this.emulation.nodes[3]));
 
-        this.emulation.nodes[4].addNIC(new NIC(this.emulation.nodes[4]));
+        this.emulation.nodes[4].addNIC(new NIC(this.emulation, this.emulation.nodes[4]));
 
         ports.push(this.emulation.nodes[0].nics[0].addPort(PortSide.EAST));
         ports.push(this.emulation.nodes[0].nics[1].addPort(PortSide.EAST));
@@ -143,6 +145,53 @@ export class TopoNet extends HTMLElement {
             stepButton.setDisabled(!this.emulation.paused);
         })
 
+
+        let netlensWindow: UIWindow | null = null;
+        let units: TransitUnit[] = [];
+        const netlensIcon = icon(faProjectDiagram).node[0] as SVGElement;
+        const packet2entry = (p: TransitUnit) => (`
+                <td>${p.id}</td>
+                <td>${formatMAC(p.frame.srcMac)}</td>
+                <td>${formatMAC(p.frame.dstMac)}</td>
+                <td>${ethernetFrameTypeNames[p.frame.type]}</td>
+            `);
+        const netlensButton = new HUDButton(netlensIcon, (e) => {
+            if (!netlensWindow) {
+                netlensWindow = new UIWindow(this, "NetLens");
+                const unitlist = units.map(p => `<tr>${packet2entry(p)}</tr>`).join("");
+                netlensWindow.setContent(`
+                        <h1>NetLens</h1>
+                        <table id="packetlist">
+                            <tr>
+                                <th>#</th>
+                                <th>src MAC</th>
+                                <th>dst MAC</th>
+                                <th>type</th>
+                            </tr>
+                            ${unitlist}
+                        </table>
+                    `);
+                const content = netlensWindow.getContent();
+                const packetlistTable = content?.shadowRoot?.querySelector("#packetlist");
+                const packetSentHandler: EventListener = (e) => {
+                    const { transitUnit } = (e as PacketSentEvent).detail;
+                    const entry = document.createElement("tr");
+                    entry.innerHTML = packet2entry(transitUnit);
+                    packetlistTable?.appendChild(entry);
+                };
+                this.emulation.addEventListener("packetSent", packetSentHandler);
+                netlensWindow.addEventListener("close", () => {
+                    netlensWindow = null
+                    this.emulation.removeEventListener("packetSent", packetSentHandler);
+                });
+            }
+        });
+
+        this.emulation.addEventListener("packetSent", (e) => {
+            const { transitUnit } = (e as PacketSentEvent).detail;
+            units.push(transitUnit);
+        });
+
         let nodeWindows: (UIWindow | null)[] = [];
         this.emulation.addEventListener("onNodeClick", (e) => {
             const {node} = (e as NodeClickedEvent).detail;
@@ -181,28 +230,35 @@ export class TopoNet extends HTMLElement {
                                 border: 1px solid #454545;
                                 padding: 10px 20px;
                             }
-                            th {
+                            .table th {
                                 background: #555555;
                             }
-                            tr {
+                            .table tr {
                                 background: #393939;
                             }
-                            tr:nth-child(odd) {
+                            .table tr:nth-child(odd) {
                                 background: #222222;
                             }
                         </style>
                         <div id="content">
                             <h1>Node ${node.id}</h1>
-                            <h2>NICs (Data-Link Layer):</h2>
+                            <h2>Host:</h2>
                             <table>
+                                <tr>
+                                    <td>Hostname: </td>
+                                    <td>${node.hostname}</td>
+                                </tr>
+                            </table>
+                            <h2>NICs:</h2>
+                            <table class="table">
                                 <tr>
                                     <th>#</th>
                                     <th>MAC Address</th>
                                 </tr>
                                 ${niclist}
                             </table>
-                            <h2>Ports (Physical Layer):</h2>
-                            <table>
+                            <h2>Ports:</h2>
+                            <table class="table">
                                 <tr>
                                     <th>#</th>
                                     <th>Side</th>
@@ -219,6 +275,7 @@ export class TopoNet extends HTMLElement {
         
         hud.appendButton(pauseButton);
         hud.appendButton(stepButton);
+        hud.appendButton(netlensButton);
         hud.appendButton(settingsButton);
 
         this.emulation.start();

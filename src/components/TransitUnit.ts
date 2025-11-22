@@ -1,15 +1,22 @@
 import { pointOnBezier } from "../lib/bezier";
 import { Connection } from "./Connection";
+import { EthernetFrame } from "./EthernetFrame";
 import { PortSide } from "./Ports";
 
 export class TransitUnit {
 
+    private static nextId: number = 0;
+    id: number;
+
     progress: number = 0;
     
     constructor(
+        public frame: EthernetFrame,
         public connection: Connection,
         public forward: boolean = true
-    ) {}
+    ) {
+        this.id = TransitUnit.nextId++;
+    }
 
     update(deltaT: number) {
         const deltaP = (deltaT) / this.connection.delay;
@@ -17,7 +24,7 @@ export class TransitUnit {
         if (this.progress > 1) {
             const receiver = this.forward ? this.connection.to : this.connection.from;
             this.connection.removeTransitUnit(this);
-            receiver.receive();
+            receiver.receive(this);
         }
     }
 

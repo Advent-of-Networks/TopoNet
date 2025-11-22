@@ -1,3 +1,4 @@
+import { Emulation } from "../engine/Emulation";
 import { NIC } from "./NIC";
 import { Port, PortSide } from "./Ports";
 
@@ -5,30 +6,37 @@ export class NetworkNode {
     private static nextId: number = 1;
     id: number;
 
+    emulation: Emulation;
+
     x: number;
     y: number;
     width: number;
     height: number;
     isHovered: boolean = false;
     nics: NIC[] = [];
-    // ports: Port[] = [];
 
-    constructor(x:number, y: number, width: number = 50, height: number = 50) {
+    hostname: string;
+
+    constructor(emulation: Emulation, hostname: string, x:number, y: number, width: number = 50, height: number = 50) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.id = NetworkNode.nextId++;
+        this.emulation = emulation;
+        this.hostname = hostname;
     }
 
     
 
     update(deltaT: number) {
-        const p = 6 * deltaT / 5000;
+        const p = 6 * deltaT / 20000;
         for(const nic of this.nics) {
             if (Math.random() < p) {
                 if (nic.ports[0].connection) {
-                    nic.send();
+                    const connection = nic.ports[0].connection;
+                    const dstMac = connection.from === nic.ports[0] ? connection.to.nic.mac : connection.from.nic.mac;
+                    nic.send(dstMac);
                 }
             }
         }
@@ -47,6 +55,11 @@ export class NetworkNode {
                 port.render(ctx);
             }
         }
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "white";
+        ctx.font = "bold 10pt Arial";
+        ctx.fillText(this.hostname, this.x, this.y + this.height/2 + 10);
     }
 
     addNIC(nic: NIC) {
