@@ -10,6 +10,10 @@ export class Iface {
     nic: NIC;
     ips: IPConfig[] = [];
 
+    update(deltaT: number) {
+        this.nic.update(deltaT);
+    }
+
     constructor(nic: NIC) {
         this.nic = nic;
         this.id = Iface.nextId++;

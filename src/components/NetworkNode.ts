@@ -33,8 +33,9 @@ export class NetworkNode {
     
 
     update(deltaT: number) {
-        const p = 6 * deltaT / 5000;
+        const p = 6 * deltaT / 50;
         for(const iface of this.interfaces) {
+            iface.update(deltaT);
             const nic = iface.nic;
             if (Math.random() < p) {
                 if (nic.ports[0].connection) {

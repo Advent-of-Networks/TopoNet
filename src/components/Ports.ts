@@ -25,11 +25,19 @@ export class Port {
     height: number = 10;
     width: number = 10;
 
+    sendingTransitUnit: TransitUnit | null = null;
+
     constructor(emulation: Emulation, nic: NIC, side: Direction) {
         this.nic = nic;
         this.side = side;
         this.id = Port.nextId++;
         this.emulation = emulation;
+    }
+
+    update(_deltaT: number) {
+        if (this.sending() && this.sendingTransitUnit!.isSent()) {
+            this.sendingTransitUnit = null;
+        }
     }
 
     connect(connection: Connection) {
@@ -40,11 +48,23 @@ export class Port {
         this.connection = null;
     }
 
+    sending() {
+        return !!this.sendingTransitUnit;
+    }
+
+    corrupt() {
+        this.sendingTransitUnit?.corrupt();
+    }
+
+    jam() {
+
+    }
+
     send(frame: EthernetFrame) {
         if (!this.connection) throw new Error("This port is not connected!");
-        const transitUnit = new TransitUnit(frame, this.connection, this.connection.from === this);
-        this.connection.addTransitUnit(transitUnit);
-        this.emulation.emit(new CustomEvent<PacketSentEventDetails>("packetSent", {detail: { transitUnit }}));
+        this.sendingTransitUnit = new TransitUnit(frame, this.connection, this.connection.from === this);
+        this.connection.addTransitUnit(this.sendingTransitUnit);
+        this.emulation.emit(new CustomEvent<PacketSentEventDetails>("packetSent", {detail: { transitUnit: this.sendingTransitUnit }}));
     }
 
     receive(transitUnit: TransitUnit) {

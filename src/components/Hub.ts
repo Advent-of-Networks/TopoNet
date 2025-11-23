@@ -14,6 +14,10 @@ export class Hub extends NetworkNode {
         this.interfaces[0].nic.mac = [0,0,0,0,0,0];
     }
 
-    update(_deltaT: number) {}
+    update(deltaT: number) {
+        for(const iface of this.interfaces) {
+            iface.update(deltaT);
+        }
+    }
 
 }

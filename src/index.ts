@@ -100,6 +100,7 @@ export class TopoNet extends HTMLElement {
                             <h1>Settings</h1>
                             <h2>Debug</h2>
                             <p>Enable: <input id="debug-mode" type="checkbox" ${this.emulation.debugMode && 'checked'} /></p>
+                            <p>Laser Pointer: <input id="laserpointer" type="checkbox" ${this.emulation.laserPointer && 'checked'} /></p>
                         </div>
                     `
                 );
@@ -109,6 +110,11 @@ export class TopoNet extends HTMLElement {
                 debugModeBox?.addEventListener("change", (e) => {
                     const target = e.target as HTMLInputElement;
                     this.emulation.debugMode = target.checked;
+                });
+                const laserPointerBox = content?.shadowRoot?.querySelector("#laserpointer");
+                laserPointerBox?.addEventListener("change", (e) => {
+                    const target = e.target as HTMLInputElement;
+                    this.emulation.laserPointer = target.checked;
                 });
             }
         });
@@ -138,9 +144,9 @@ export class TopoNet extends HTMLElement {
         const netlensIcon = icon(faProjectDiagram).node[0] as SVGElement;
         const packet2entry = (p: TransitUnit) => (`
                 <td>${p.id}</td>
-                <td>${formatMAC(p.frame.srcMac)}</td>
-                <td>${formatMAC(p.frame.dstMac)}</td>
-                <td>${ethernetFrameTypeNames[p.frame.type]}</td>
+                <td>${formatMAC(p.payload.srcMac)}</td>
+                <td>${formatMAC(p.payload.dstMac)}</td>
+                <td>${ethernetFrameTypeNames[p.payload.type]}</td>
             `);
         const netlensButton = new HUDButton(netlensIcon, (e) => {
             if (!netlensWindow) {

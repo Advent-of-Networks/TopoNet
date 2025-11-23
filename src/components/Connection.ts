@@ -1,3 +1,4 @@
+import { subdivideBezier } from "../lib/bezier";
 import { Port } from "./Ports";
 import { TransitUnit } from "./TransitUnit";
 import { Direction } from "./types";
@@ -7,7 +8,9 @@ export class Connection {
     to: Port;
 
     transitUnits: TransitUnit[] = [];
-    delay: number = 200;
+    // TODO: realistic 
+    delay: number = 1;
+    speed: number = 1000;
 
     constructor(from: Port, to: Port) {
         this.from = from;
@@ -61,7 +64,6 @@ export class Connection {
         ctx.moveTo(startX, startY);
         ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
         ctx.stroke();
-
         this.transitUnits.forEach(t => t.render(ctx));
     }
 }

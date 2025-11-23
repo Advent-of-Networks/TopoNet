@@ -25,7 +25,7 @@ export class Emulation extends EventTarget {
     dragged: boolean = false;
     offsetX = 0;
     offsetY = 0;
-    speedFactor: number = 0.1;
+    speedFactor: number = 0.001;
 
     startTime = performance.now();
     lastFrameTime = this.startTime;
@@ -36,6 +36,7 @@ export class Emulation extends EventTarget {
     stepScale: number = 1000;
 
     debugMode: boolean = false;
+    laserPointer: boolean = false;
 
     mouse = new Mouse();
     camera = new Camera();
@@ -72,8 +73,7 @@ export class Emulation extends EventTarget {
     }
 
     mousemove(e: MouseEvent) {
-        let screenX, screenY;
-        [this.mouse.x, this.mouse.y, screenX, screenY] = this.eventToCoords(e);
+        [this.mouse.x, this.mouse.y, this.mouse.screenX, this.mouse.screenY] = this.eventToCoords(e);
 
         if (this.draggingNode) {
             this.draggingNode.x = this.mouse.x - this.offsetX;
@@ -83,12 +83,12 @@ export class Emulation extends EventTarget {
         }
 
         if (this.camera.isPanning) {
-            const dx = (screenX - this.camera.panStartX) / this.camera.zoom;
-            const dy = (screenY - this.camera.panStartY) / this.camera.zoom;
+            const dx = (this.mouse.screenX - this.camera.panStartX) / this.camera.zoom;
+            const dy = (this.mouse.screenY - this.camera.panStartY) / this.camera.zoom;
             this.camera.x += dx;
             this.camera.y += dy;
-            this.camera.panStartX = screenX;
-            this.camera.panStartY = screenY;
+            this.camera.panStartX = this.mouse.screenX;
+            this.camera.panStartY = this.mouse.screenY;
             return;
         }
 
@@ -212,6 +212,19 @@ export class Emulation extends EventTarget {
         this.ctx.restore();
     }
 
+    laser() {
+        if (!this.laserPointer) return;
+        this.ctx.save();
+        this.ctx.resetTransform();
+        this.ctx.beginPath();
+        this.ctx.fillStyle="#ff0000";
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = "red";
+        this.ctx.arc(this.mouse.screenX, this.mouse.screenY, 6, 0, 2*Math.PI, false);
+        this.ctx.fill();
+        this.ctx.restore();
+    }
+
     debug() {
         if(!this.debugMode) return;
         this.ctx.save();
@@ -225,6 +238,7 @@ export class Emulation extends EventTarget {
             `FPS: ${this.fps}`,
             `Mouse`,
             `  Position: ${this.mouse.x} ${this.mouse.y}`,
+            `  Screen: ${this.mouse.screenX} ${this.mouse.screenY}`,
             `  Buttons: ${this.mouse.buttons}`,
             `Camera`,
             `  Position: ${this.camera.x} ${this.camera.y}`,
@@ -251,6 +265,7 @@ export class Emulation extends EventTarget {
         this.update(deltaT * this.speedFactor);
         this.render();
         this.debug();
+        this.laser();
         requestAnimationFrame(this.loop.bind(this));
     }
 

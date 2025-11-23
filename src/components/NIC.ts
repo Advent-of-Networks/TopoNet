@@ -21,6 +21,9 @@ export class NIC {
     ports: Port[] = [];
     node: NetworkNode;
 
+    queue: EthernetFrame[] = [];
+    sendingTransitUnit: TransitUnit | null = null;
+
     forward: boolean = false;
 
     constructor(emulation: Emulation, node: NetworkNode) {
@@ -46,19 +49,53 @@ export class NIC {
         return port;
     }
 
+    update(deltaT: number) {
+        if (!this.sending() && this.queue.length > 0) {
+            this.ports[0].send(this.queue.pop()!);
+        }
+        for(const port of this.ports) {
+            port.update(deltaT);
+        }
+    }
+
     send(dstMac: MacAddress) {
         const frame = new EthernetFrame(dstMac, this.mac,EthernetFrameType.EXPERIMENTAL1);
         // TODO: if there is more than one port, use ARP Table (switches only)
-        this.ports[0].send(frame);
+        this.queue.unshift(frame);
+    }
+
+    sending() {
+        for (const port of this.ports) {
+            if (port.sending()) return true;
+        }
+        return false;
+    }
+
+    corrupt() {
+        for (const port of this.ports) {
+            port.corrupt();
+        }
+    }
+
+    jam() {
+        for (const port of this.ports) {
+            port.jam();
+        }
     }
 
     receive(transmitUnit: TransitUnit) {
-        const {frame} = transmitUnit;
+        const {payload} = transmitUnit;
         if (this.forward) {
-            for (const port of this.ports) {
-                const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
-                if (port === receiver) continue;
-                port.send(frame);
+            if(this.sending()) {
+                // Collision
+                this.corrupt();
+                this.jam();
+            } else {
+                for (const port of this.ports) {
+                    const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
+                    if (port === receiver) continue;
+                    port.send(payload);
+                }
             }
         }
     }

@@ -30,6 +30,31 @@ export class EthernetFrame {
     // TODO: padding
     // TODO: checksum
 
+    private headerLength(): number {
+        // 24bit srcMAC
+        // 24bit dstMAC
+        // optional 32bit VLAN Tag (currently omitted)
+        // 16bit Frame Type
+        return 24 + 24 + 0 + 16;
+    }
+
+    private paddingLength(): number {
+        // pad frame to at least 64 bytes (512bits)
+        const MIN_FRAME_LEN = 512;
+        const payloadLength = 240; // TODO: set real payload length
+        const paddingLength = Math.max(0, MIN_FRAME_LEN - this.headerLength() + payloadLength + 32);
+        return paddingLength;
+    }
+
+    length(): number {
+        // HEADER
+        // payload
+        // padding
+        // 32bit checksum
+        const payloadLength = 24; // TODO: set real payload length
+        return this.headerLength() + payloadLength + this.paddingLength() + 32;
+    }
+
     constructor(dstMac: MacAddress, srcMac: MacAddress, type: EthernetFrameType) {
         this.dstMac = dstMac;
         this.srcMac = srcMac;
