@@ -14,6 +14,11 @@ export type PauseEvent = CustomEvent<PauseEventDetails>;
 
 export type NodeClickedEvent = CustomEvent<NodeClickedEventDetails>;
 
+export enum PacketMode {
+    PHYSICAL,
+    LOGICAL,
+}
+
 export class Emulation extends EventTarget {
     canvas : HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
@@ -34,6 +39,8 @@ export class Emulation extends EventTarget {
     paused: boolean = false;
     steps: number = 0;
     stepScale: number = 1000;
+
+    packetMode: PacketMode = PacketMode.PHYSICAL;
 
     debugMode: boolean = false;
     laserPointer: boolean = false;

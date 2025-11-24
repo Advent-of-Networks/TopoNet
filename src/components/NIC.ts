@@ -86,16 +86,18 @@ export class NIC {
     receive(transmitUnit: TransitUnit) {
         const {payload} = transmitUnit;
         if (this.forward) {
-            if(this.sending()) {
-                // Collision
+            const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
+            const collision = this.sending();
+            // corrupt old TUs
+            if(collision) {
                 this.corrupt();
-                this.jam();
-            } else {
-                for (const port of this.ports) {
-                    const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
-                    if (port === receiver) continue;
-                    port.send(payload);
-                }
+            }
+            for (const port of this.ports) {
+                port.send(payload);
+            }
+            // corrupt new TUs
+            if(collision) {
+                this.corrupt();
             }
         }
     }

@@ -1,7 +1,7 @@
 import { PacketSentEvent, Port } from "./components/Ports";
 import { Connection } from "./components/Connection";
 import { NetworkNode } from "./components/NetworkNode";
-import { Emulation, NodeClickedEvent, PauseEvent } from "./engine/Emulation";
+import { Emulation, NodeClickedEvent, PacketMode, PauseEvent } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
@@ -98,6 +98,11 @@ export class TopoNet extends HTMLElement {
                         </style>
                         <div id="content">
                             <h1>Settings</h1>
+                            <h2>Simulator</h2>
+                            <select id="packet-mode">
+                                <option value=${PacketMode.LOGICAL} ${this.emulation.packetMode === PacketMode.LOGICAL && "selected"}>Logical</option>
+                                <option value=${PacketMode.PHYSICAL} ${this.emulation.packetMode === PacketMode.PHYSICAL && "selected"}>Physical</option>
+                            </select>
                             <h2>Debug</h2>
                             <p>Enable: <input id="debug-mode" type="checkbox" ${this.emulation.debugMode && 'checked'} /></p>
                             <p>Laser Pointer: <input id="laserpointer" type="checkbox" ${this.emulation.laserPointer && 'checked'} /></p>
@@ -106,6 +111,11 @@ export class TopoNet extends HTMLElement {
                 );
                 settingsWindow.addEventListener("close", () => {settingsWindow = null});
                 const content = settingsWindow.getContent();
+                const packetMode = content?.shadowRoot?.querySelector("#packet-mode");
+                packetMode?.addEventListener("change", (e) => {
+                    const target = e.target as HTMLSelectElement;
+                    this.emulation.packetMode = parseInt(target.value) as PacketMode;
+                })
                 const debugModeBox = content?.shadowRoot?.querySelector("#debug-mode");
                 debugModeBox?.addEventListener("change", (e) => {
                     const target = e.target as HTMLInputElement;

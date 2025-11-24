@@ -1,3 +1,4 @@
+import { PacketMode } from "../engine/Emulation";
 import { pointOnBezier, subdivideBezier } from "../lib/bezier";
 import { Connection } from "./Connection";
 import { EthernetFrame } from "./EthernetFrame";
@@ -26,9 +27,11 @@ export class TransitUnit {
      * Returns length (in bits) of TransUnit
      */
     length(): number {
-        if (this.corruptAt !== null) {
-            return this.corruptAt * this.connection.speed;
-        }
+        // TODO: easy access to emulation needed
+        if (this.connection.from.nic.node.emulation.packetMode === PacketMode.LOGICAL) return 0;
+        // if (this.corruptAt !== null) {
+        //     return this.corruptAt * this.connection.speed;
+        // }
         // 55 55 55 55 55 55 55 D5 Payload/EthernetFrame
         // 64bit + payload.length()
         return 64 + this.payload.length();
@@ -58,7 +61,6 @@ export class TransitUnit {
      * First bit of packet has been received
      */
     isFirstByteReceived(): boolean {
-        const d_trans = this.length()/this.connection.speed;
         return this.lifeTime >= this.connection.delay;
     }
     
@@ -66,7 +68,6 @@ export class TransitUnit {
         const deltaP = deltaT / this.connection.delay;
         this.progress += deltaP;
         this.lifeTime += deltaT;
-        const d_trans = this.length()/this.connection.speed;
         const receiver = this.forward ? this.connection.to : this.connection.from;
         if (this.isFirstByteReceived() && !this.received) {
             this.received = true;
@@ -105,34 +106,36 @@ export class TransitUnit {
             case Direction.EAST:  cp2X += offset; break;
         }
 
-        const t = this.lifeTime;
-        const d_trans = this.length()/this.connection.speed;
+        if (this.connection.from.nic.node.emulation.packetMode === PacketMode.LOGICAL) {
+            // TODO: for higher layers, this view makes sense, but disable transmission delay!
+            const p = this.progress;
 
-        let t1 = Math.min(t/this.connection.delay);
-        let t2 = Math.min(1, Math.max((t-d_trans)/this.connection.delay, 0));
+            const px = pointOnBezier(p, x1, cp1X, cp2X, x4);
+            const py = pointOnBezier(p, y1, cp1Y, cp2Y, y4);
 
-        const clamp = (v: number) => Math.min(1 - 1e-3, Math.max(1e-3, v));
-        t1 = clamp(t1);
-        t2 = clamp(t2);
-
-        const sub = subdivideBezier({x: x1, y: y1}, {x: cp1X, y: cp1Y}, {x: cp2X, y:cp2Y}, {x: x4, y: y4}, t1, t2);
-
-        ctx.strokeStyle = this.corruptAt === null ? "#00ff00" : "#ff5555";
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(sub.p0.x, sub.p0.y);
-        ctx.bezierCurveTo(sub.p1.x, sub.p1.y, sub.p2.x, sub.p2.y, sub.p3.x, sub.p3.y);
-        ctx.stroke();
-
-        // TODO: for higher layers, this view makes sense, but disable transmission delay!
-        // const p = this.progress;
-
-        // const px = pointOnBezier(p, x1, cp1X, cp2X, x4);
-        // const py = pointOnBezier(p, y1, cp1Y, cp2Y, y4);
-
-        // ctx.fillStyle = "red";
-        // ctx.beginPath();
-        // ctx.arc(px, py, 4, 0, Math.PI * 2);
-        // ctx.fill();
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            const t = this.lifeTime;
+            const d_trans = this.length()/this.connection.speed;
+            
+            let t1 = Math.min(t/this.connection.delay);
+            let t2 = Math.min(1, Math.max((t-d_trans)/this.connection.delay, 0));
+            
+            const clamp = (v: number) => Math.min(1 - 1e-3, Math.max(1e-3, v));
+            t1 = clamp(t1);
+            t2 = clamp(t2);
+            
+            const sub = subdivideBezier({x: x1, y: y1}, {x: cp1X, y: cp1Y}, {x: cp2X, y:cp2Y}, {x: x4, y: y4}, t1, t2);
+            
+            ctx.strokeStyle = this.corruptAt === null ? "#6bf16b88" : "#ffaa0088";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(sub.p0.x, sub.p0.y);
+            ctx.bezierCurveTo(sub.p1.x, sub.p1.y, sub.p2.x, sub.p2.y, sub.p3.x, sub.p3.y);
+            ctx.stroke();
+        }
     }
 }
