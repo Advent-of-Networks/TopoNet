@@ -1,7 +1,6 @@
 import { Emulation } from "../engine/Emulation";
 import { GUINetworkNode } from "../guiComponents/GUINetworkNode";
 import { Iface } from "./Iface";
-import { Port } from "./Ports";
 import { Direction } from "./types";
 
 export class NetworkNode extends GUINetworkNode {
@@ -9,8 +8,6 @@ export class NetworkNode extends GUINetworkNode {
     constructor(emulation: Emulation, name: string, x:number, y: number, width: number = 50, height: number = 50, labelDirection = Direction.SOUTH) {
         super(emulation, name, x, y, width, height, labelDirection);
     }
-
-    
 
     update(deltaT: number) {
         const p = 6 * deltaT / 50;

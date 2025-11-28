@@ -9,7 +9,7 @@ export class Connection extends GUIConnection {
     speed: number = 1000;
 
     constructor(emulation: Emulation, from: Port, to: Port) {
-        super(null, emulation);
+        super(emulation);
         this.addParent(from);
         this.addParent(to);
     }

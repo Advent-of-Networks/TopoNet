@@ -14,7 +14,7 @@ export class GUINetworkNode extends GUIElement<never, Iface> {
     private labelDirection: Direction;
 
     constructor(emulation: Emulation, name: string, x:number, y: number, width: number = 50, height: number = 50, labelDirection = Direction.SOUTH) {
-        super(null, emulation, x, y, width, height);
+        super(null, emulation, x, y, width, height, true);
         this.name = name;
         this.labelDirection = labelDirection;
     }

@@ -17,15 +17,17 @@ export class GUIElement<
     private children: TChild[] = [];
     private parents: TParent[] = [];
     private state: State = State.Update;
+    private interactive: boolean;
+    private processing: boolean = false;
 
     protected x: number;
     protected y: number;
     protected width: number;
     protected height: number;
 
-    public isHovered: boolean = false;
+    protected isHovered: boolean = false;
 
-    constructor(parent: TParent | null, emulation: Emulation, x: number = 0, y: number = 0, width: number = 50, height: number = 50) {
+    constructor(parent: TParent | null, emulation: Emulation, x: number = 0, y: number = 0, width: number = 50, height: number = 50, interactive: boolean = false) {
         this.id = GUIElement.nextId++;
         this.emulation = emulation;
         if (parent !== null) {
@@ -35,6 +37,15 @@ export class GUIElement<
         this.y = y;
         this.width = width;
         this.height = height;
+        this.interactive = interactive;
+    }
+
+    setHover(state: boolean) {
+        this.isHovered = state;
+    }
+
+    setInteractive(value: boolean) {
+        this.interactive = value;
     }
 
     setParent(parent: TParent) {
@@ -78,6 +89,22 @@ export class GUIElement<
             py >= this.y - this.height/2 &&
             py <= this.y + this.height/2
         );
+    }
+
+    hovering(px: number, py: number): GUIElement<any, any> | null {
+        // TODO: for performance reasons, check if the element is inside the display first
+
+        // abort if element already processing to prevent loops
+        if(this.processing) return null;
+
+        let el: GUIElement | null = null;
+
+        for (const child of this.children) {
+            el = child.hovering(px, py);
+            if (el === child) break; // abort for performance reasons
+        }
+        if (!el) el = this.interactive && this.contains(px, py) ? this : null;
+        return el;
     }
 
     getID() {

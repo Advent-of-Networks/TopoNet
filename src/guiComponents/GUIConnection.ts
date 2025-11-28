@@ -1,10 +1,17 @@
 import { Port } from "../components/Ports";
 import { TransmitUnit } from "../components/TransmitUnit";
 import { Direction } from "../components/types";
+import { Emulation } from "../engine/Emulation";
+import { distance, isPointNearBezier } from "../lib/bezier";
 import { GUIElement } from "./GUIElement";
 
 export class GUIConnection extends GUIElement<Port, TransmitUnit> {
-    
+
+    constructor(emulation: Emulation) {
+        super(null, emulation);
+        this.setInteractive(true);
+    }
+
     getBezierCurve(reverse: boolean = false) {
         const ports = this.getParents();
         let from = ports[0];
@@ -46,14 +53,40 @@ export class GUIConnection extends GUIElement<Port, TransmitUnit> {
         return [startX, startY, cp1X, cp1Y, cp2X, cp2Y, endX, endY];
     }
 
+    contains(px: number, py: number) {
+        const [p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y] = this.getBezierCurve();
+        return isPointNearBezier(
+            {x: px, y: py},
+            {
+                p0: {x: p0x, y: p0y},
+                p1: {x: p1x, y: p1y},
+                p2: {x: p2x, y: p2y},
+                p3: {x: p3x, y: p3y},
+            },
+            10
+        )
+    }
+
     render(ctx: CanvasRenderingContext2D) {
         const [startX, startY, cp1X, cp1Y, cp2X, cp2Y, endX, endY] = this.getBezierCurve();
 
-        ctx.strokeStyle = "#3333aa";
+        ctx.strokeStyle = this.isHovered ? "#5555ee" : "#3333aa";
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
         ctx.stroke();
+
+        if (this.isHovered) {
+            const mouse = this.getEmulation().mouse;
+            ctx.beginPath();
+            ctx.fillStyle = distance(mouse, {x: startX, y: startY}) < 6 ? "#00ee00" : "#33aa33";
+            ctx.arc(startX, startY, 5, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = distance(mouse, {x: endX, y: endY}) < 6 ? "#00ee00" : "#33aa33";
+            ctx.arc(endX, endY, 5, 0, 2*Math.PI);
+            ctx.fill();
+        }
     }
 }

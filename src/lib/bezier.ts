@@ -10,6 +10,36 @@ export type BezierCurve = {
     p3: Vec2,
 };
 
+export function distance(a: Vec2, b: Vec2): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+export function isPointNearBezier(
+  point: Vec2,
+  bezier: BezierCurve,
+  theshold: number = 5,
+  subdivisions: number = 100
+) : boolean {
+  const { p0, p1, p2, p3 } = bezier;
+
+  for (let i = 0; i < subdivisions; i++) {
+    const t1 = i / subdivisions;
+
+    const pointX = pointOnBezier(t1, p0.x, p1.x, p2.x, p3.x);
+    const pointY = pointOnBezier(t1, p0.y, p1.y, p2.y, p3.y);
+
+    const dist = distance(point, {x: pointX, y: pointY});
+
+    if (dist < theshold) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export function pointOnBezier(t: number, p0: number, p1: number, p2: number, p3: number) {
     const u = 1 - t;
     return u*u*u*p0

@@ -26,8 +26,8 @@ export class Emulation extends EventTarget {
 
     gridSize = 100;
 
-    hoveringNode: NetworkNode | null = null;
-    draggingNode: NetworkNode | null = null;
+    hoveringElement: GUIElement | null = null;
+    draggingElement: GUIElement | null = null;
     dragged: boolean = false;
     offsetX = 0;
     offsetY = 0;
@@ -84,9 +84,9 @@ export class Emulation extends EventTarget {
     mousemove(e: MouseEvent) {
         [this.mouse.x, this.mouse.y, this.mouse.screenX, this.mouse.screenY] = this.eventToCoords(e);
 
-        if (this.draggingNode) {
-            this.draggingNode.setX(this.mouse.x - this.offsetX);
-            this.draggingNode.setY(this.mouse.y - this.offsetY);
+        if (this.draggingElement) {
+            this.draggingElement.setX(this.mouse.x - this.offsetX);
+            this.draggingElement.setY(this.mouse.y - this.offsetY);
             this.dragged = true;
             return;
         }
@@ -101,15 +101,15 @@ export class Emulation extends EventTarget {
             return;
         }
 
-        if (this.hoveringNode) {
-            this.hoveringNode.isHovered = false;
-            this.hoveringNode = null;
+        if (this.hoveringElement) {
+            this.hoveringElement.setHover(false);
+            this.hoveringElement = null;
         }
 
         for (let i = this.nodes.length - 1; i >= 0; i--) {
-            if (this.nodes[i].contains(this.mouse.x, this.mouse.y)) {
-                this.hoveringNode = this.nodes[i];
-                this.hoveringNode.isHovered = true;
+            this.hoveringElement = this.nodes[i].hovering(this.mouse.x, this.mouse.y);
+            if (this.hoveringElement) {
+                this.hoveringElement.setHover(true);
                 break;
             }
         }
@@ -120,17 +120,19 @@ export class Emulation extends EventTarget {
 
         let screenX, screenY;
         [this.mouse.x, this.mouse.y, screenX, screenY] = this.eventToCoords(e);
-        if (this.hoveringNode) {
-            this.draggingNode = this.hoveringNode;
-            const rect = this.draggingNode.getRect();
+        if (this.hoveringElement) {
+            this.draggingElement = this.hoveringElement;
+            const rect = this.draggingElement.getRect();
             this.dragged = false;
             this.offsetX = this.mouse.x - rect.x;
             this.offsetY = this.mouse.y - rect.y;
 
-            const index = this.nodes.indexOf(this.draggingNode);
-            if (index > -1) {
-                this.nodes.splice(index, 1);
-                this.nodes.push(this.draggingNode);
+            if (this.draggingElement instanceof NetworkNode) {
+                const index = this.nodes.indexOf(this.draggingElement);
+                if (index > -1) {
+                    this.nodes.splice(index, 1);
+                    this.nodes.push(this.draggingElement);
+                }
             }
         } else {
             this.camera.isPanning = true;
@@ -141,16 +143,18 @@ export class Emulation extends EventTarget {
 
     mouseup(e: MouseEvent) {
         this.mouse.buttons = e.buttons;
-        if (this.draggingNode && !this.dragged) {
-            this.dispatchEvent(new CustomEvent<NodeClickedEventDetails>("onNodeClick", {detail: { node: this.draggingNode}}));
+        if (this.draggingElement && !this.dragged) {
+            if (this.draggingElement instanceof NetworkNode) {
+                this.dispatchEvent(new CustomEvent<NodeClickedEventDetails>("onNodeClick", {detail: { node: this.draggingElement}}));
+            }
         }
-        this.draggingNode = null;
+        this.draggingElement = null;
         this.camera.isPanning = false;
     }
 
     mouseleave(e: MouseEvent) {
         this.mouse.buttons = e.buttons;
-        this.draggingNode = null;
+        this.draggingElement = null;
         this.camera.isPanning = false;
     }
 
