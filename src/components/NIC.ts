@@ -1,60 +1,46 @@
 import { Emulation } from "../engine/Emulation";
+import { GUINIC } from "../guiComponents/GUINIC";
 import { EthernetFrame, EthernetFrameType } from "./EthernetFrame";
-import { NetworkNode } from "./NetworkNode";
+import { Iface } from "./Iface";
 import { Port } from "./Ports";
-import { TransitUnit } from "./TransitUnit";
+import { TransmitUnit } from "./TransmitUnit";
 import { Direction, MacAddress } from "./types";
 
 export function formatMAC(address: MacAddress) {
     return address.map(b => b.toString(16).padStart(2, "0")).join(":").toUpperCase();
 }
 
-export class NIC {
-
-    private static nextId: number = 0;
-    id: number;
-
-    emulation: Emulation;
+export class NIC extends GUINIC {
 
     mac: MacAddress;
 
-    ports: Port[] = [];
-    node: NetworkNode;
-
     queue: EthernetFrame[] = [];
-    sendingTransitUnit: TransitUnit | null = null;
+    sendingTransitUnit: TransmitUnit | null = null;
 
     forward: boolean = false;
 
-    constructor(emulation: Emulation, node: NetworkNode) {
-        this.node = node;
-        this.id = NIC.nextId++;
-
-        this.emulation = emulation;
-        
+    constructor(emulation: Emulation, iface: Iface) {
+        super(iface, emulation);
+        const id = this.getID();
         this.mac = [
             0x06, 
             0xCA, 
             0xFE, 
-            ((this.id >> 16) & 0xFF) ^ 0x8A,
-            ((this.id >> 8) & 0xFF) ^ 0x25,
-            (this.id & 0xFF) ^ 0xC1,
+            ((id >> 16) & 0xFF) ^ 0x8A,
+            ((id >> 8) & 0xFF) ^ 0x25,
+             (id & 0xFF) ^ 0xC1,
         ];
     }
 
     addPort(side: Direction): Port {
-        const port = new Port(this.emulation, this, side);
-        this.ports.push(port);
-        this.node.adjustPortsOnSide(side);
+        const port = new Port(this.getEmulation(), this, side);
+        this.getParent()!.getParent()!.adjustPortsOnSide(side);
         return port;
     }
 
     update(deltaT: number) {
         if (!this.sending() && this.queue.length > 0) {
-            this.ports[0].send(this.queue.pop()!);
-        }
-        for(const port of this.ports) {
-            port.update(deltaT);
+            this.getChildren()[0].send(this.queue.pop()!);
         }
     }
 
@@ -65,34 +51,36 @@ export class NIC {
     }
 
     sending() {
-        for (const port of this.ports) {
+        for (const port of this.getChildren()) {
             if (port.sending()) return true;
         }
         return false;
     }
 
     corrupt() {
-        for (const port of this.ports) {
+        for (const port of this.getChildren()) {
             port.corrupt();
         }
     }
 
     jam() {
-        for (const port of this.ports) {
+        for (const port of this.getChildren()) {
             port.jam();
         }
     }
 
-    receive(transmitUnit: TransitUnit) {
+    receive(transmitUnit: TransmitUnit) {
         const {payload} = transmitUnit;
         if (this.forward) {
-            const receiver = transmitUnit.forward ? transmitUnit.connection.to : transmitUnit.connection.from;
+            const [from, to] = transmitUnit.getParent()!.getPorts();
+            const receiver = transmitUnit.forward ? to : from;
             const collision = this.sending();
             // corrupt old TUs
             if(collision) {
                 this.corrupt();
             }
-            for (const port of this.ports) {
+            for (const port of this.getChildren()) {
+                if (port === receiver) continue;
                 port.send(payload);
             }
             // corrupt new TUs

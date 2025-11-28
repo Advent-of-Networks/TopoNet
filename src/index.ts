@@ -1,18 +1,16 @@
 import { PacketSentEvent, Port } from "./components/Ports";
 import { Connection } from "./components/Connection";
-import { NetworkNode } from "./components/NetworkNode";
 import { Emulation, NodeClickedEvent, PacketMode, PauseEvent } from "./engine/Emulation";
 import { UIWindow } from "./engine/ui/window";
 import { HUD, HUDButton } from "./engine/ui/HUD";
 import { icon } from "@fortawesome/fontawesome-svg-core";
 import { faCog, faPause, faPlay, faProjectDiagram, faStepForward } from "@fortawesome/free-solid-svg-icons";
-import { formatMAC, NIC } from "./components/NIC";
-import { TransitUnit } from "./components/TransitUnit";
+import { formatMAC } from "./components/NIC";
 import { ethernetFrameTypeNames } from "./components/EthernetFrame";
-import { Iface } from "./components/Iface";
 import { Computer } from "./components/Computer";
 import { Direction } from "./components/types";
 import { Hub } from "./components/Hub";
+import { TransmitUnit } from "./components/TransmitUnit";
 
 
 
@@ -62,22 +60,22 @@ export class TopoNet extends HTMLElement {
 
         const ports: Port[] = [];
 
-        this.emulation.nodes[1].addInterface(new Iface(new NIC(this.emulation, this.emulation.nodes[1])));
-        this.emulation.nodes[2].addInterface(new Iface(new NIC(this.emulation, this.emulation.nodes[2])));
-        this.emulation.nodes[3].addInterface(new Iface(new NIC(this.emulation, this.emulation.nodes[3])));
+        this.emulation.nodes[1].addInterface();
+        this.emulation.nodes[2].addInterface();
+        this.emulation.nodes[3].addInterface();
 
-        ports.push(this.emulation.nodes[0].interfaces[0].nic.addPort(Direction.SOUTH));
-        ports.push(this.emulation.nodes[0].interfaces[0].nic.addPort(Direction.SOUTH));
-        ports.push(this.emulation.nodes[0].interfaces[0].nic.addPort(Direction.SOUTH));
+        ports.push(this.emulation.nodes[0].getInterfaces()[0].nic.addPort(Direction.SOUTH));
+        ports.push(this.emulation.nodes[0].getInterfaces()[0].nic.addPort(Direction.SOUTH));
+        ports.push(this.emulation.nodes[0].getInterfaces()[0].nic.addPort(Direction.SOUTH));
 
-        ports.push(this.emulation.nodes[1].interfaces[0].nic.addPort(Direction.NORTH));
-        ports.push(this.emulation.nodes[2].interfaces[0].nic.addPort(Direction.NORTH));
-        ports.push(this.emulation.nodes[3].interfaces[0].nic.addPort(Direction.NORTH));
+        ports.push(this.emulation.nodes[1].getInterfaces()[0].nic.addPort(Direction.NORTH));
+        ports.push(this.emulation.nodes[2].getInterfaces()[0].nic.addPort(Direction.NORTH));
+        ports.push(this.emulation.nodes[3].getInterfaces()[0].nic.addPort(Direction.NORTH));
 
         for (const connection of [
-            new Connection(ports[0], ports[3]),
-            new Connection(ports[1], ports[4]),
-            new Connection(ports[2], ports[5]),
+            new Connection(this.emulation, ports[0], ports[3]),
+            new Connection(this.emulation, ports[1], ports[4]),
+            new Connection(this.emulation, ports[2], ports[5]),
         ]) {
             this.emulation.connections.push(connection);
         }
@@ -150,10 +148,10 @@ export class TopoNet extends HTMLElement {
 
 
         let netlensWindow: UIWindow | null = null;
-        let units: TransitUnit[] = [];
+        let units: TransmitUnit[] = [];
         const netlensIcon = icon(faProjectDiagram).node[0] as SVGElement;
-        const packet2entry = (p: TransitUnit) => (`
-                <td>${p.id}</td>
+        const packet2entry = (p: TransmitUnit) => (`
+                <td>${p.getID()}</td>
                 <td>${formatMAC(p.payload.srcMac)}</td>
                 <td>${formatMAC(p.payload.dstMac)}</td>
                 <td>${ethernetFrameTypeNames[p.payload.type]}</td>
@@ -198,38 +196,38 @@ export class TopoNet extends HTMLElement {
         let nodeWindows: (UIWindow | null)[] = [];
         this.emulation.addEventListener("onNodeClick", (e) => {
             const {node} = (e as NodeClickedEvent).detail;
-            if (!nodeWindows[node.id]) {
-                nodeWindows[node.id] = new UIWindow(this, `${node.name}`);
+            if (!nodeWindows[node.getID()]) {
+                nodeWindows[node.getID()] = new UIWindow(this, `${node.getName()}`);
                 // TODO: this can be optimized to one iteration.
-                const ifacelist = node.interfaces.map(i => (
+                const ifacelist = node.getInterfaces().map(i => (
                     `
                         <tr>
-                            <td>${i.id}</td>
-                            <td>${i.nic.id}</td>
+                            <td>${i.getID()}</td>
+                            <td>${i.nic.getID()}</td>
                         </tr>
                     `
                 )).join("");
-                const niclist = node.interfaces.map(i => (
+                const niclist = node.getInterfaces().map(i => (
                     `
                         <tr>
-                            <td>${i.nic.id}</td>
+                            <td>${i.nic.getID()}</td>
                             <td>${formatMAC(i.nic.mac)}</td>
                         </tr>
                     `
                 )).join("");
-                const portList = node.interfaces.map(i => (
-                    i.nic.ports.map(p => (
+                const portList = node.getInterfaces().map(i => (
+                    i.nic.getChildren().map(p => (
                         `
                             <tr>
-                                <td>${p.id}</td>
+                                <td>${p.getID()}</td>
                                 <td>${p.side}</td>
-                                <td>${p.connection ? `<span style="color: #60C851">Connected</span>` : `<span style="color: #F24848">Disconnected</span>`}</td>
+                                <td>${p.getConnection() ? `<span style="color: #60C851">Connected</span>` : `<span style="color: #F24848">Disconnected</span>`}</td>
                             </tr>
                         `
                     )).join("")
                 )).join("");
                 
-                nodeWindows[node.id]!.setContent(
+                nodeWindows[node.getID()]!.setContent(
                     `
                         <style>
                             #content {
@@ -253,12 +251,12 @@ export class TopoNet extends HTMLElement {
                             }
                         </style>
                         <div id="content">
-                            <h1>${node.name}</h1>
+                            <h1>${node.getName()}</h1>
                             <h2>Host:</h2>
                             <table>
                                 <tr>
                                     <td>Hostname: </td>
-                                    <td>${node.name}</td>
+                                    <td>${node.getName()}</td>
                                 </tr>
                             </table>
                             <h3>Interfaces</h3>
@@ -289,7 +287,7 @@ export class TopoNet extends HTMLElement {
                         </div>
                     `
                 );
-                nodeWindows[node.id]!.addEventListener("close", () => {nodeWindows[node.id] = null});
+                nodeWindows[node.getID()]!.addEventListener("close", () => {nodeWindows[node.getID()] = null});
             }
         });
         

@@ -26,3 +26,11 @@ export enum Direction {
     SOUTH = "SOUTH",
     WEST = "WEST",
 }
+
+
+export type Rect = {
+    x: number;
+    y: number;
+    witdh: number;
+    height: number;
+};

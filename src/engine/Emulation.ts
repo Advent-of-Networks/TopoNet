@@ -1,5 +1,6 @@
 import { Connection } from "../components/Connection";
 import { NetworkNode } from "../components/NetworkNode";
+import { GUIElement } from "../guiComponents/GUIElement";
 import { Camera } from "./Camera";
 import { Mouse } from "./Mouse";
 interface PauseEventDetails {
@@ -40,7 +41,7 @@ export class Emulation extends EventTarget {
     steps: number = 0;
     stepScale: number = 1000;
 
-    packetMode: PacketMode = PacketMode.PHYSICAL;
+    packetMode: PacketMode = PacketMode.LOGICAL;
 
     debugMode: boolean = false;
     laserPointer: boolean = false;
@@ -48,6 +49,7 @@ export class Emulation extends EventTarget {
     mouse = new Mouse();
     camera = new Camera();
 
+    elements: GUIElement[] = [];
     nodes: NetworkNode[] = [];
     connections: Connection[] = [];
 
@@ -83,8 +85,8 @@ export class Emulation extends EventTarget {
         [this.mouse.x, this.mouse.y, this.mouse.screenX, this.mouse.screenY] = this.eventToCoords(e);
 
         if (this.draggingNode) {
-            this.draggingNode.x = this.mouse.x - this.offsetX;
-            this.draggingNode.y = this.mouse.y - this.offsetY;
+            this.draggingNode.setX(this.mouse.x - this.offsetX);
+            this.draggingNode.setY(this.mouse.y - this.offsetY);
             this.dragged = true;
             return;
         }
@@ -120,9 +122,10 @@ export class Emulation extends EventTarget {
         [this.mouse.x, this.mouse.y, screenX, screenY] = this.eventToCoords(e);
         if (this.hoveringNode) {
             this.draggingNode = this.hoveringNode;
+            const rect = this.draggingNode.getRect();
             this.dragged = false;
-            this.offsetX = this.mouse.x - this.draggingNode.x;
-            this.offsetY = this.mouse.y - this.draggingNode.y;
+            this.offsetX = this.mouse.x - rect.x;
+            this.offsetY = this.mouse.y - rect.y;
 
             const index = this.nodes.indexOf(this.draggingNode);
             if (index > -1) {
@@ -170,8 +173,7 @@ export class Emulation extends EventTarget {
     }
 
     update(deltaT: number) {
-        this.nodes.forEach(node => node.update(deltaT));
-        this.connections.forEach(connection => connection.update(deltaT));
+        this.nodes.forEach(node => node._update(deltaT));
     }
 
     render() {
@@ -183,8 +185,7 @@ export class Emulation extends EventTarget {
         this.ctx.scale(this.camera.zoom, this.camera.zoom);
         this.ctx.translate(this.camera.x, this.camera.y);
         this.background();
-        this.nodes.forEach(node => node.render(this.ctx));
-        this.connections.forEach(connection => connection.render(this.ctx));
+        this.nodes.forEach(node => node._render(this.ctx));
         this.ctx.restore();
     }
 
