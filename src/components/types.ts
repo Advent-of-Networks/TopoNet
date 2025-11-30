@@ -1,3 +1,4 @@
+import { GUIElement } from "../guiComponents/GUIElement";
 
 type byte = number;
 
@@ -34,3 +35,24 @@ export type Rect = {
     witdh: number;
     height: number;
 };
+
+interface GUIElementDragEventDetails {
+    offsetX: number;
+    offsetY: number;
+}
+
+export class GUIElementDragEvent extends CustomEvent<GUIElementDragEventDetails> {
+    constructor(detail: GUIElementDragEventDetails) {
+        super("onDrag", {detail, cancelable: true,});
+    }
+}
+
+interface GUIElementDropEventDetails {
+    dropedOn: GUIElement | null;
+}
+
+export class GUIElementDropEvent extends CustomEvent<GUIElementDropEventDetails> {
+    constructor(detail: GUIElementDropEventDetails) {
+        super("onDrop", {detail, cancelable: true,});
+    }
+}

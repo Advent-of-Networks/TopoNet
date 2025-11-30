@@ -2,13 +2,15 @@
 import { EthernetFrame } from "./EthernetFrame";
 import { GUIPort } from "../guiComponents/GUIPort";
 import { TransmitUnit } from "./TransmitUnit";
+import { Connection } from "./Connection";
+import { NIC } from "./NIC";
 interface PacketSentEventDetails {
     transitUnit: TransmitUnit;
 }
 
 export type PacketSentEvent = CustomEvent<PacketSentEventDetails>;
 
-export class Port extends GUIPort {
+export class Port extends GUIPort<NIC, Connection> {
 
     sendingTransitUnit: TransmitUnit | null = null;
 

@@ -3,7 +3,7 @@ import { GUINetworkNode } from "../guiComponents/GUINetworkNode";
 import { Iface } from "./Iface";
 import { Direction } from "./types";
 
-export class NetworkNode extends GUINetworkNode {
+export class NetworkNode extends GUINetworkNode<Iface> {
 
     constructor(emulation: Emulation, name: string, x:number, y: number, width: number = 50, height: number = 50, labelDirection = Direction.SOUTH) {
         super(emulation, name, x, y, width, height, labelDirection);
@@ -18,6 +18,7 @@ export class NetworkNode extends GUINetworkNode {
                 const connection = port?.getChild();
                 if (connection) {
                     const [from, to] = connection.getPorts();
+                    if (!from || !to) continue;
                     const dstMac = from === port ? to.getParent()!.mac : from.getParent()!.mac;
                     nic.send(dstMac);
                 }

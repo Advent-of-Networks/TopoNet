@@ -1,14 +1,11 @@
-import { Iface } from "../components/Iface";
 import { Port } from "../components/Ports";
-import { Direction } from "../components/types";
+import { Direction, GUIElementDragEvent, GUIElementDropEvent } from "../components/types";
 import { Emulation } from "../engine/Emulation";
 import { GUIElement } from "./GUIElement";
 import { GUIInterface } from "./GUIInterface";
 
 
-export class GUINetworkNode extends GUIElement<never, Iface> {
-
-    // protected interfaces: Iface[] = [];
+export class GUINetworkNode<TInterface extends GUIInterface = GUIInterface> extends GUIElement<never, TInterface> {
 
     private name: string;
     private labelDirection: Direction;
@@ -17,6 +14,14 @@ export class GUINetworkNode extends GUIElement<never, Iface> {
         super(null, emulation, x, y, width, height, true);
         this.name = name;
         this.labelDirection = labelDirection;
+        this.addEventListener("onDrag", this.onDrag);
+    }
+
+    private onDrag(e: Event) {
+        if (!(e instanceof GUIElementDragEvent)) return;
+        const {offsetX, offsetY} = e.detail;
+        this.x += offsetX;
+        this.y += offsetY;
     }
 
     getName() {
@@ -24,7 +29,6 @@ export class GUINetworkNode extends GUIElement<never, Iface> {
     }
 
     adjustPortsOnSide(side: Direction) {
-
         const portsOnSide: Port[] = [];
         for (let iface of this.getChildren()) {
             const nic = iface.nic;
@@ -84,12 +88,6 @@ export class GUINetworkNode extends GUIElement<never, Iface> {
             ctx.lineWidth = 3;
             ctx.strokeRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
         }
-        // for (const iface of this.interfaces) {
-        //     const nic = iface.nic;
-        //     for (const port of nic.ports) {
-        //         port.render(ctx);
-        //     }
-        // }
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "white";

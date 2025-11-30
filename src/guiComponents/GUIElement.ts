@@ -1,4 +1,4 @@
-import { Rect } from "../components/types";
+import { GUIElementDragEvent, GUIElementDropEvent, Rect } from "../components/types";
 import { Emulation } from "../engine/Emulation";
 
 enum State {
@@ -7,15 +7,15 @@ enum State {
 }
 
 export class GUIElement<
-    TParent extends GUIElement<any, any> = GUIElement<any, any>,
+    TParent extends GUIElement<any, any> | null = GUIElement<any, any> | null,
     TChild extends GUIElement<any, any> = GUIElement<any, any>
-> {
+> extends EventTarget {
 
     private static nextId: number = 0;
     private id: number;
     private emulation: Emulation;
     private children: TChild[] = [];
-    private parents: TParent[] = [];
+    protected parents: TParent[] = [];
     private state: State = State.Update;
     private interactive: boolean;
     private processing: boolean = false;
@@ -28,6 +28,7 @@ export class GUIElement<
     protected isHovered: boolean = false;
 
     constructor(parent: TParent | null, emulation: Emulation, x: number = 0, y: number = 0, width: number = 50, height: number = 50, interactive: boolean = false) {
+        super();
         this.id = GUIElement.nextId++;
         this.emulation = emulation;
         if (parent !== null) {
@@ -50,12 +51,16 @@ export class GUIElement<
 
     setParent(parent: TParent) {
         this.parents[0] = parent;
-        parent.addChild(this);
+        if (parent) {
+            parent.addChild(this);
+        }
     }
 
     addParent(parent: TParent) {
         this.parents.push(parent);
-        parent.addChild(this);
+        if (parent) {
+            parent.addChild(this);
+        }
     }
 
     getParent() {
@@ -72,6 +77,10 @@ export class GUIElement<
 
     getChild() {
         return this.children.length > 0 ? this.children[0] : null;
+    }
+
+    setChild(child: TChild) {
+        this.children[0] = child;
     }
 
     removeChild(child: TChild) {
@@ -91,7 +100,7 @@ export class GUIElement<
         );
     }
 
-    hovering(px: number, py: number): GUIElement<any, any> | null {
+    _hoverState(px: number, py: number): GUIElement<any, any> | null {
         // TODO: for performance reasons, check if the element is inside the display first
 
         // abort if element already processing to prevent loops
@@ -100,7 +109,7 @@ export class GUIElement<
         let el: GUIElement | null = null;
 
         for (const child of this.children) {
-            el = child.hovering(px, py);
+            el = child._hoverState(px, py);
             if (el) break; // abort for performance reasons
         }
         if (!el) el = this.interactive && this.contains(px, py) ? this : null;
@@ -110,6 +119,9 @@ export class GUIElement<
     getID() {
         return this.id;
     }
+
+    getX(): number {return this.x};
+    getY(): number {return this.y};
 
     setX(x: number) { this.x = x; }
     setY(y: number) { this.y = y; }
@@ -125,11 +137,18 @@ export class GUIElement<
 
     update(deltaT: number) {}
 
+    updatePostOrder(deltaT: number) {}
+
     render(ctx: CanvasRenderingContext2D) {}
+
+    renderPostOrder(ctx: CanvasRenderingContext2D) {}
 
     getEmulation(): Emulation {
         return this.emulation;
     }
+
+    _ondrag(event: GUIElementDragEvent) { this.dispatchEvent(event); }
+    _ondrop(event: GUIElementDropEvent) { this.dispatchEvent(event); }
 
     _getState(): State {
         return this.state;
@@ -143,6 +162,7 @@ export class GUIElement<
         // only update if all parents were already updated
         //   > this hinders update of looped dependencies.
         for(const parent of this.parents) {
+            if (parent === null) continue;
             if (parent._getState() === State.Update) return;
         }
         this.update(deltaT);
@@ -150,6 +170,7 @@ export class GUIElement<
         for (const child of this.children) {
             child._update(deltaT);
         }
+        this.updatePostOrder(deltaT);
     }
 
     _render(ctx: CanvasRenderingContext2D) {
@@ -168,5 +189,7 @@ export class GUIElement<
         for (const child of this.children) {
             child._render(ctx);
         }
+        this.renderPostOrder(ctx);
+        
     }
 }

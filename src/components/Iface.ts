@@ -1,18 +1,15 @@
 import { Emulation } from "../engine/Emulation";
 import { GUIInterface } from "../guiComponents/GUIInterface";
-import { GUINetworkNode } from "../guiComponents/GUINetworkNode";
 import { NetworkNode } from "./NetworkNode";
 import { NIC } from "./NIC";
 import { IPConfig } from "./types";
 
-export class Iface extends GUIInterface {
+export class Iface extends GUIInterface<NIC> {
 
-    nic: NIC;
     ips: IPConfig[] = [];
 
     constructor(emulation: Emulation, node: NetworkNode) {
-        super(node, emulation);
-        this.nic = new NIC(emulation, this);
+        super(emulation, node, (e: Emulation, i: GUIInterface<any>) => new NIC(e, i as Iface));
     }
 
 }

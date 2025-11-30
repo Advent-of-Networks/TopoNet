@@ -1,5 +1,6 @@
 import { Connection } from "../components/Connection";
 import { NetworkNode } from "../components/NetworkNode";
+import { GUIElementDragEvent, GUIElementDropEvent } from "../components/types";
 import { GUIElement } from "../guiComponents/GUIElement";
 import { Camera } from "./Camera";
 import { Mouse } from "./Mouse";
@@ -29,8 +30,8 @@ export class Emulation extends EventTarget {
     hoveringElement: GUIElement | null = null;
     draggingElement: GUIElement | null = null;
     dragged: boolean = false;
-    offsetX = 0;
-    offsetY = 0;
+    private startX = 0;
+    private startY = 0;
     speedFactor: number = 0.001;
 
     startTime = performance.now();
@@ -85,10 +86,13 @@ export class Emulation extends EventTarget {
         [this.mouse.x, this.mouse.y, this.mouse.screenX, this.mouse.screenY] = this.eventToCoords(e);
 
         if (this.draggingElement) {
-            this.draggingElement.setX(this.mouse.x - this.offsetX);
-            this.draggingElement.setY(this.mouse.y - this.offsetY);
+            const event = new GUIElementDragEvent({offsetX: this.mouse.x - this.startX, offsetY: this.mouse.y - this.startY});
+            this.draggingElement._ondrag(event);
+            this.startX = this.mouse.x;
+            this.startY = this.mouse.y;
             this.dragged = true;
-            return;
+            // Don't return here to implement dropzones (hovering while dragging)
+            // return;
         }
 
         if (this.camera.isPanning) {
@@ -107,7 +111,7 @@ export class Emulation extends EventTarget {
         }
 
         for (let i = this.nodes.length - 1; i >= 0; i--) {
-            this.hoveringElement = this.nodes[i].hovering(this.mouse.x, this.mouse.y);
+            this.hoveringElement = this.nodes[i]._hoverState(this.mouse.x, this.mouse.y);
             if (this.hoveringElement) {
                 this.hoveringElement.setHover(true);
                 break;
@@ -124,8 +128,8 @@ export class Emulation extends EventTarget {
             this.draggingElement = this.hoveringElement;
             const rect = this.draggingElement.getRect();
             this.dragged = false;
-            this.offsetX = this.mouse.x - rect.x;
-            this.offsetY = this.mouse.y - rect.y;
+            this.startX = this.mouse.x;
+            this.startY = this.mouse.y;
 
             if (this.draggingElement instanceof NetworkNode) {
                 const index = this.nodes.indexOf(this.draggingElement);
@@ -148,13 +152,22 @@ export class Emulation extends EventTarget {
                 this.dispatchEvent(new CustomEvent<NodeClickedEventDetails>("onNodeClick", {detail: { node: this.draggingElement}}));
             }
         }
-        this.draggingElement = null;
+        if (this.draggingElement) {
+            const event = new GUIElementDropEvent({dropedOn: this.hoveringElement});
+            this.draggingElement._ondrop(event);
+            this.draggingElement = null;
+        }
         this.camera.isPanning = false;
+        this.mousemove(e);
     }
 
     mouseleave(e: MouseEvent) {
         this.mouse.buttons = e.buttons;
-        this.draggingElement = null;
+        if (this.draggingElement) {
+            const event = new GUIElementDropEvent({dropedOn: this.hoveringElement});
+            this.draggingElement._ondrop(event);
+            this.draggingElement = null;
+        }
         this.camera.isPanning = false;
     }
 
