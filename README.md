@@ -11,3 +11,9 @@ You can try the latest demo [here](https://advent-of-networks.github.io/TopoNet/
 ### Language
 
 ## Optimizations
+
+## Further work
+ - refactor mouse events, dragging and hovering
+ - pre/post rendering
+ - window refactoring
+ - connection (replugging, new connections, remove connections)

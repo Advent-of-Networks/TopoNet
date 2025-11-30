@@ -101,7 +101,7 @@ export class GUIElement<
 
         for (const child of this.children) {
             el = child.hovering(px, py);
-            if (el === child) break; // abort for performance reasons
+            if (el) break; // abort for performance reasons
         }
         if (!el) el = this.interactive && this.contains(px, py) ? this : null;
         return el;

@@ -55,6 +55,8 @@ export class GUIConnection extends GUIElement<Port, TransmitUnit> {
 
     contains(px: number, py: number) {
         const [p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y] = this.getBezierCurve();
+        if (distance({x: p0x, y: p0y}, {x: px, y: py}) < 6) return true;
+        if (distance({x: p3x, y: p3y}, {x: px, y: py}) < 6) return true;
         return isPointNearBezier(
             {x: px, y: py},
             {
@@ -63,7 +65,7 @@ export class GUIConnection extends GUIElement<Port, TransmitUnit> {
                 p2: {x: p2x, y: p2y},
                 p3: {x: p3x, y: p3y},
             },
-            10
+            10/this.getEmulation().camera.zoom
         )
     }
 
