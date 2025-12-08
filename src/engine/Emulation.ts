@@ -111,7 +111,7 @@ export class Emulation extends EventTarget {
         }
 
         for (let i = this.nodes.length - 1; i >= 0; i--) {
-            this.hoveringElement = this.nodes[i]._hoverState(this.mouse.x, this.mouse.y);
+            this.hoveringElement = this.nodes[i]._hoverState(this.mouse.x, this.mouse.y, this.draggingElement);
             if (this.hoveringElement) {
                 this.hoveringElement.setHover(true);
                 break;

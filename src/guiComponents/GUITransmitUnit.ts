@@ -19,7 +19,7 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
         this.forward = forward;
     }
 
-/**
+    /**
      * Returns length (in bits) of TransUnit
      */
     length(): number {

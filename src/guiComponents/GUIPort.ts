@@ -1,42 +1,28 @@
 import { Connection } from "../components/Connection";
+import { NIC } from "../components/NIC";
 import { Port } from "../components/Ports";
-import { Direction, GUIElementDropEvent } from "../components/types";
+import { Direction } from "../components/types";
 import { Emulation } from "../engine/Emulation";
-import { GUIConnection } from "./GUIConnection";
 import { GUIElement } from "./GUIElement";
-import { GUINIC } from "./GUINIC";
 
-export class GUIPort<TNIC extends GUINIC = GUINIC, TConnection extends GUIConnection = GUIConnection> extends GUIElement<TNIC, TConnection> {
+export class GUIPort extends GUIElement<NIC, Connection> {
 
 
     side: Direction;
 
-    constructor(emulation: Emulation, nic: TNIC, side: Direction) {
+    constructor(emulation: Emulation, nic: NIC, side: Direction) {
         super(nic, emulation, 0, 0, 10, 10);
         this.side = side;
-        this.addEventListener("onDrag", this.onDrag);
-        this.addEventListener("onDrop", this.onDrop);
     }
 
-    onDrag(e: Event) {
-        if (!(this instanceof Port)) return;
-        if(!this.getChild()) {
-            new Connection(this.getEmulation(), this, null);
-        }
-    }
-    
-    onDrop(e: Event) {
-        if (!(e instanceof GUIElementDropEvent)) return;
-        const newEvent = new GUIElementDropEvent(e.detail);
-        this.getChild()?._ondrop(newEvent);
-    }
-
-    _hoverState(px: number, py: number): GUIElement<any, any> | null {
+    _hoverState(px: number, py: number, draggingElement: GUIElement | null = null): GUIElement<any, any> | null {
         this.setInteractive(this.getChild() === null);
-        return super._hoverState(px, py);
+        return super._hoverState(px, py, draggingElement);
     }
 
-    contains(px: number, py: number) {
+
+    contains(px: number, py: number, dragging: GUIElement | null = null) {
+        if (dragging !== null && !(dragging instanceof Connection) && !(dragging instanceof Port)) return false;
         const rect = this.getParent()!.getParent()!.getParent()!.getRect();
         return (
             px >= rect.x - this.width/2 + this.x &&

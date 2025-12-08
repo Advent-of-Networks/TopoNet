@@ -91,7 +91,8 @@ export class GUIElement<
         return this.children;
     }
 
-    contains(px: number, py: number) {
+    contains(px: number, py: number, dragging: GUIElement | null = null) {
+        if (dragging !== null) return false;
         return (
             px >= this.x - this.width/2 &&
             px <= this.x + this.width/2 &&
@@ -100,7 +101,7 @@ export class GUIElement<
         );
     }
 
-    _hoverState(px: number, py: number): GUIElement<any, any> | null {
+    _hoverState(px: number, py: number, dragging: GUIElement | null = null): GUIElement<any, any> | null {
         // TODO: for performance reasons, check if the element is inside the display first
 
         // abort if element already processing to prevent loops
@@ -109,10 +110,10 @@ export class GUIElement<
         let el: GUIElement | null = null;
 
         for (const child of this.children) {
-            el = child._hoverState(px, py);
+            el = child._hoverState(px, py, dragging);
             if (el) break; // abort for performance reasons
         }
-        if (!el) el = this.interactive && this.contains(px, py) ? this : null;
+        if (!el) el = this.interactive && this.contains(px, py, dragging) ? this : null;
         return el;
     }
 

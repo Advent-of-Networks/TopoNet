@@ -18,3 +18,4 @@ You can try the latest demo [here](https://advent-of-networks.github.io/TopoNet/
  - [ ] When dragging connections, they might get rendered below other nodes. The parent node should be always on top
  - [ ] Currently, ports are connected if a cable is plugged in, even if the other side is not connectod
  - [ ] TUs don't get removed if a cable is unplugged
+ - [ ] When dragging cables, you can hover things other than ports. Maybe pass the dragging element to a mousemove or hover event to prevent hovering if i am currently dragging something I can't drop at this element.

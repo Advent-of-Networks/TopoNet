@@ -139,7 +139,8 @@ export class GUIConnection extends GUIElement<Port | null, TransmitUnit> {
         return [startX, startY, cp1X, cp1Y, cp2X, cp2Y, endX, endY];
     }
 
-    contains(px: number, py: number) {
+    contains(px: number, py: number, dragging: GUIElement | null = null) {
+        if (dragging !== null) return false;
         const [p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y] = this.getBezierCurve();
         if (distance({x: p0x, y: p0y}, {x: px, y: py}) < 6) return true;
         if (distance({x: p3x, y: p3y}, {x: px, y: py}) < 6) return true;
