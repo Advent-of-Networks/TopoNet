@@ -54,11 +54,13 @@ export class Port extends GUIPort {
     }
 
     getConnection() {
-        return this.getChild();
+        const connection = this.getChild();
+        if (!connection || !connection.connected()) return null;
+        return connection;
     }
 
     send(frame: EthernetFrame) {
-        const connection = this.getChild();
+        const connection = this.getConnection();
         if (!connection) return;
         this.sendingTransitUnit = new TransmitUnit(this.getEmulation(), frame, connection, connection.getParent() === this);
         this.getEmulation().emit(new CustomEvent<PacketSentEventDetails>("packetSent", {detail: { transitUnit: this.sendingTransitUnit }}));

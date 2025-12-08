@@ -17,4 +17,3 @@ You can try the latest demo [here](https://advent-of-networks.github.io/TopoNet/
  - [ ] currently, TransmitUnits are rendered twice initially (see log)
  - [ ] When dragging connections, they might get rendered below other nodes. The parent node should be always on top
  - [ ] Also, below other ports. suggestions welcome
- - [ ] Currently, ports are connected if a cable is plugged in, even if the other side is not connected

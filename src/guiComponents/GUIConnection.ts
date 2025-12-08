@@ -27,6 +27,11 @@ export class GUIConnection extends GUIElement<Port | null, TransmitUnit> {
     private offsetX: number = 0;
     private offsetY: number = 0;
 
+    connected(): boolean {
+        const parents = this.getParents();
+        return parents.length >= 2 && !!parents[0] && !!parents[1];
+    }
+
     private onDrag(e: Event) {
         if (!(e instanceof GUIElementDragEvent)) return;
         const {offsetX, offsetY} = e.detail;
