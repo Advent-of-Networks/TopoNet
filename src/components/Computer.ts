@@ -19,7 +19,6 @@ export class Computer extends NetworkNode {
                 const port = nic.getChild();
                 const connection = port?.getChild();
                 if (connection) {
-                    console.log(this.getName());
                     const [from, to] = connection.getPorts();
                     if (!from || !to) continue;
                     const dstMac = from === port ? to.getParent()!.mac : from.getParent()!.mac;

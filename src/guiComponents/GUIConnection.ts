@@ -37,6 +37,7 @@ export class GUIConnection extends GUIElement<Port | null, TransmitUnit> {
             if (this instanceof Connection) {
                 this.parents[0]?.removeChild(this);
             }
+            this.getChildren().forEach((c) => {c.corrupt(), this.removeChild(c)});
             this.draggingPoint = DraggingPoint.Start;
             this.setInteractive(false);
             this.parents[0] = null;
@@ -46,6 +47,7 @@ export class GUIConnection extends GUIElement<Port | null, TransmitUnit> {
             if (this instanceof Connection) {
                 this.parents[1]?.removeChild(this);
             }
+            this.getChildren().forEach((c) => {c.corrupt(), this.removeChild(c)});
             this.draggingPoint = DraggingPoint.End;
             this.setInteractive(false);
             this.parents[1] = null;
