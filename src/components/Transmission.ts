@@ -1,35 +1,42 @@
-import { Connection } from "../components/Connection";
-import { EthernetFrame } from "../components/EthernetFrame";
 import { Emulation, PacketMode } from "../engine/Emulation";
+import { GUIElement } from "../guiComponents/GUIElement";
 import { pointOnBezier, subdivideBezier } from "../lib/bezier";
-import { GUIElement } from "./GUIElement";
+import { Connection } from "./Connection";
+import { TransmissionUnit } from "./TransmissionUnit";
 
-export class GUITransmitUnit extends GUIElement<Connection, never> {
+export class Transmission extends GUIElement<Connection, TransmissionUnit> {
 
-    public payload: EthernetFrame;
     public forward: boolean;
+    protected corruptAt: number | null = null;
 
     protected progress: number = 0;
     protected lifeTime: number = 0;
-    protected corruptAt: number | null = null;
-
-    constructor(emulation: Emulation, payload: EthernetFrame, connection: Connection, forward: boolean) {
+    private received: boolean = false;
+    
+    constructor(emulation: Emulation, transmissionUnit: TransmissionUnit, connection: Connection, forward: boolean) {
         super(connection, emulation);
-        this.payload = payload;
+        if (transmissionUnit instanceof TransmissionUnit) this.setChild(transmissionUnit);
         this.forward = forward;
     }
 
-    /**
-     * Returns length (in bits) of TransUnit
-     */
-    length(): number {
-        if (this.getEmulation().packetMode === PacketMode.LOGICAL) return 0;
-        // if (this.corruptAt !== null) {
-        //     return this.corruptAt * this.connection.speed;
-        // }
-        // 55 55 55 55 55 55 55 D5 Payload/EthernetFrame
-        // 64bit + payload.length()
-        return 64 + this.payload.length();
+    update(deltaT: number) {
+        const deltaP = deltaT / this.getParent()!.delay;
+        this.progress += deltaP;
+        this.lifeTime += deltaT;
+        const [from, to] = this.getParent()!.getPorts();
+        const receiver = this.forward ? to : from;
+        if (!receiver) return; // TODO: This is a quick fix. a proper solution includes corruptinge the TUs and deleting it from the connection.
+        if (this.isFirstByteReceived() && !this.received) {
+            this.received = true;
+            receiver.receive(this);
+        }
+        if (this.isFullyReceived()) {
+            this.getParent()!.removeTransmission(this);
+        }
+    }
+
+    getLifeTime() {
+        return this.lifeTime;
     }
 
     corrupt() {
@@ -40,7 +47,7 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
      * All bits of packet are on the medium
      */
     isSent(): boolean {
-        const d_trans = this.length()/this.getParent()!.speed;
+        const d_trans = this.getChild()!.length()/this.getParent()!.getSpeedBpms();
         return this.lifeTime >= d_trans;
     }
 
@@ -48,7 +55,7 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
      * All bits of packet have been received
      */
     isFullyReceived(): boolean {
-        const d_trans = this.length()/this.getParent()!.speed;
+        const d_trans = this.getChild()!.length()/this.getParent()!.getSpeedBpms();
         return this.lifeTime >= d_trans + this.getParent()!.delay;
     }
 
@@ -57,6 +64,10 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
      */
     isFirstByteReceived(): boolean {
         return this.lifeTime >= this.getParent()!.delay;
+    }
+
+    isCorrupted() {
+        return this.corruptAt === null;
     }
 
     render(ctx: CanvasRenderingContext2D) {
@@ -76,7 +87,8 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
             ctx.fill();
         } else {
             const t = this.lifeTime;
-            const d_trans = this.length()/this.getParent()!.speed;
+            const speed = this.getParent()!.getSpeedBpms(); // speed is in bps, but time in ms
+            const d_trans = this.getChild()!.length()/speed;
             
             let t1 = Math.min(t/this.getParent()!.delay);
             let t2 = Math.min(1, Math.max((t-d_trans)/this.getParent()!.delay, 0));
@@ -86,8 +98,11 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
             t2 = clamp(t2);
             
             const sub = subdivideBezier({x: x1, y: y1}, {x: cp1X, y: cp1Y}, {x: cp2X, y:cp2Y}, {x: x4, y: y4}, t1, t2);
-            
-            ctx.strokeStyle = this.corruptAt === null ? "#6bf16b88" : "#ffaa0088";
+
+            ctx.strokeStyle = this.isCorrupted() ? "#6bf16b88" : "#ffaa0088";
+            if (this.getChild()!.payload === null) {
+                ctx.strokeStyle = "#aa4444";
+            }
             ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.moveTo(sub.p0.x, sub.p0.y);
@@ -95,4 +110,5 @@ export class GUITransmitUnit extends GUIElement<Connection, never> {
             ctx.stroke();
         }
     }
+
 }

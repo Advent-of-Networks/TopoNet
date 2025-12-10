@@ -1,13 +1,13 @@
 import { NetworkNode } from "../components/NetworkNode";
+import { NIC } from "../components/NIC";
 import { Emulation } from "../engine/Emulation";
 import { GUIElement } from "./GUIElement";
-import { GUINIC } from "./GUINIC";
 
-export class GUIInterface<TNIC extends GUINIC = GUINIC> extends GUIElement<NetworkNode, GUINIC> {
+export class GUIInterface extends GUIElement<NetworkNode, NIC> {
 
-    nic: TNIC;
+    nic: NIC;
 
-    constructor(emulation: Emulation, node: NetworkNode, nicFactory: (emulation: Emulation, Interface: GUIInterface<any>) => TNIC) {
+    constructor(emulation: Emulation, node: NetworkNode, nicFactory: (emulation: Emulation, Interface: GUIInterface) => NIC) {
         super(node, emulation);
         this.nic = nicFactory(emulation, this);
     }

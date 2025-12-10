@@ -56,3 +56,11 @@ export class GUIElementDropEvent extends CustomEvent<GUIElementDropEventDetails>
         super("onDrop", {detail, cancelable: true,});
     }
 }
+
+
+export enum Duplex {
+    FULL = "FULL",
+    HALF = "HALF",
+    HUB = "HALF (HUB)", // HUB is effectively HALF, but passive (no CSMA/CD)
+    NONE = "-", // not connected
+}

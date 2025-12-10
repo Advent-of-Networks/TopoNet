@@ -1,12 +1,12 @@
 import { Emulation } from "../engine/Emulation";
 import { DraggingPoint, GUIConnection } from "../guiComponents/GUIConnection";
 import { Port } from "./Ports";
-import { TransmitUnit } from "./TransmitUnit";
+import { Transmission } from "./Transmission";
 
 export class Connection extends GUIConnection {
-    // TODO: realistic values
-    delay: number = 1;
-    speed: number = 1000;
+
+    delay: number = 0.003; // v=180.000.000m/s and l=500m ~> d~=3us
+    private speed: number = 10_000_000; // 10 Mbps (10BaseT)
 
     constructor(emulation: Emulation, from: Port | null, to: Port | null) {
         super(emulation);
@@ -15,8 +15,12 @@ export class Connection extends GUIConnection {
         if (!to) this.draggingPoint = DraggingPoint.End;
     }
 
-    removeTransitUnit(transitUnit: TransmitUnit) {
-        this.removeChild(transitUnit);
+    removeTransmission(transmission: Transmission) {
+        this.removeChild(transmission);
+    }
+
+    getSpeedBpms() {
+        return this.speed/1000;
     }
 
     getPorts() {

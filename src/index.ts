@@ -10,7 +10,7 @@ import { ethernetFrameTypeNames } from "./components/EthernetFrame";
 import { Computer } from "./components/Computer";
 import { Direction } from "./components/types";
 import { Hub } from "./components/Hub";
-import { TransmitUnit } from "./components/TransmitUnit";
+import { Transmission } from "./components/Transmission";
 
 
 
@@ -148,18 +148,18 @@ export class TopoNet extends HTMLElement {
 
 
         let netlensWindow: UIWindow | null = null;
-        let units: TransmitUnit[] = [];
+        let units: Transmission[] = [];
         const netlensIcon = icon(faProjectDiagram).node[0] as SVGElement;
-        const packet2entry = (p: TransmitUnit) => (`
+        const packet2entry = (p: Transmission) => (`
                 <td>${p.getID()}</td>
-                <td>${formatMAC(p.payload.srcMac)}</td>
-                <td>${formatMAC(p.payload.dstMac)}</td>
-                <td>${ethernetFrameTypeNames[p.payload.type]}</td>
+                <td>${formatMAC(p.getChild()!.payload!.srcMac)}</td>
+                <td>${formatMAC(p.getChild()!.payload!.dstMac)}</td>
+                <td>${ethernetFrameTypeNames[p.getChild()!.payload!.type]}</td>
             `);
         const netlensButton = new HUDButton(netlensIcon, (e) => {
             if (!netlensWindow) {
                 netlensWindow = new UIWindow(this, "NetLens");
-                const unitlist = units.map(p => `<tr>${packet2entry(p)}</tr>`).join("");
+                const unitlist = units.filter((p) => p.getChild()!.payload).map(p => `<tr>${packet2entry(p)}</tr>`).join("");
                 netlensWindow.setContent(`
                         <h1>NetLens</h1>
                         <table id="packetlist">
@@ -175,9 +175,9 @@ export class TopoNet extends HTMLElement {
                 const content = netlensWindow.getContent();
                 const packetlistTable = content?.shadowRoot?.querySelector("#packetlist");
                 const packetSentHandler: EventListener = (e) => {
-                    const { transitUnit } = (e as PacketSentEvent).detail;
+                    const { transmission } = (e as PacketSentEvent).detail;
                     const entry = document.createElement("tr");
-                    entry.innerHTML = packet2entry(transitUnit);
+                    entry.innerHTML = packet2entry(transmission);
                     packetlistTable?.appendChild(entry);
                 };
                 this.emulation.addEventListener("packetSent", packetSentHandler);
@@ -189,8 +189,8 @@ export class TopoNet extends HTMLElement {
         });
 
         this.emulation.addEventListener("packetSent", (e) => {
-            const { transitUnit } = (e as PacketSentEvent).detail;
-            units.push(transitUnit);
+            const { transmission } = (e as PacketSentEvent).detail;
+            units.push(transmission);
         });
 
         let nodeWindows: (UIWindow | null)[] = [];
@@ -222,6 +222,8 @@ export class TopoNet extends HTMLElement {
                                 <td>${p.getID()}</td>
                                 <td>${p.side}</td>
                                 <td>${p.getConnection() ? `<span style="color: #60C851">Connected</span>` : `<span style="color: #F24848">Disconnected</span>`}</td>
+                                <td>${p.getDuplex()}</td>
+                                <td>${p.getDuplexCapability()}</td>
                             </tr>
                         `
                     )).join("")
@@ -253,6 +255,9 @@ export class TopoNet extends HTMLElement {
                         <div id="content">
                             <h1>${node.getName()}</h1>
                             <h2>Host:</h2>
+                            <p>
+                                <button id="send_button">Send Packet</button>
+                            </p>
                             <table>
                                 <tr>
                                     <td>Hostname: </td>
@@ -281,6 +286,8 @@ export class TopoNet extends HTMLElement {
                                     <th>#</th>
                                     <th>Side</th>
                                     <th>State</th>
+                                    <th>Duplex Mode</th>
+                                    <th>Duplex Capa</th>
                                 </tr>
                                 ${portList}
                             </table>
@@ -288,6 +295,13 @@ export class TopoNet extends HTMLElement {
                     `
                 );
                 nodeWindows[node.getID()]!.addEventListener("close", () => {nodeWindows[node.getID()] = null});
+                const content = nodeWindows[node.getID()]!.getContent();
+                const sendButton = content?.shadowRoot?.querySelector("#send_button");
+                sendButton?.addEventListener("click", (e) => {
+                    // const target = e.target as HTMLSelectElement;
+                    // this.emulation.packetMode = parseInt(target.value) as PacketMode;
+                    const nic = node.getChild()?.getChild()?.send([0,0,0,0,0,0]);
+                })
             }
         });
         

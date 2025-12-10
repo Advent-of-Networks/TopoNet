@@ -32,19 +32,20 @@ export class Emulation extends EventTarget {
     dragged: boolean = false;
     private startX = 0;
     private startY = 0;
-    speedFactor: number = 0.001;
+    speedFactor: number = 0.000003;
 
     startTime = performance.now();
     lastFrameTime = this.startTime;
+    time = 0;
     fps = 0;
 
     paused: boolean = false;
     steps: number = 0;
     stepScale: number = 1000;
 
-    packetMode: PacketMode = PacketMode.LOGICAL;
+    packetMode: PacketMode = PacketMode.PHYSICAL;
 
-    debugMode: boolean = false;
+    debugMode: boolean = true;
     laserPointer: boolean = false;
 
     mouse = new Mouse();
@@ -273,6 +274,7 @@ export class Emulation extends EventTarget {
             `Time`,
             `  Speed: ${this.speedFactor}`,
             `  Start: ${this.startTime}`,
+            `  Time: ${this.time}ms`,
             `  Last Frame: ${this.lastFrameTime}`,
         ];
 
@@ -287,6 +289,7 @@ export class Emulation extends EventTarget {
         let deltaT = this.updateFPS();
         if (this.paused) deltaT = this.steps;
         this.steps = 0;
+        this.time += deltaT * this.speedFactor;
         this.update(deltaT * this.speedFactor);
         this.render();
         this.debug();

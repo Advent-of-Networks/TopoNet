@@ -4,12 +4,12 @@ import { NetworkNode } from "./NetworkNode";
 import { NIC } from "./NIC";
 import { IPConfig } from "./types";
 
-export class Iface extends GUIInterface<NIC> {
+export class Iface extends GUIInterface{
 
     ips: IPConfig[] = [];
 
     constructor(emulation: Emulation, node: NetworkNode) {
-        super(emulation, node, (e: Emulation, i: GUIInterface<any>) => new NIC(e, i as Iface));
+        super(emulation, node, (e: Emulation, i: GUIInterface) => new NIC(e, i as Iface));
     }
 
 }

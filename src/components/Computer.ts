@@ -12,20 +12,20 @@ export class Computer extends NetworkNode {
     }
 
     update(deltaT: number) {
-        const p = 6 * deltaT / 50;
-        for(const iface of this.getChildren()) {
-            const nic = iface.nic;
-            if (Math.random() < p) {
-                const port = nic.getChild();
-                const connection = port?.getChild();
-                if (connection) {
-                    const [from, to] = connection.getPorts();
-                    if (!from || !to) continue;
-                    const dstMac = from === port ? to.getParent()!.mac : from.getParent()!.mac;
-                    nic.send(dstMac);
-                }
-            }
-        }
+        // const p = 1800 * deltaT / 50;
+        // for(const iface of this.getChildren()) {
+        //     const nic = iface.nic;
+        //     if (Math.random() < p) {
+        //         const port = nic.getChild();
+        //         const connection = port?.getChild();
+        //         if (connection) {
+        //             const [from, to] = connection.getPorts();
+        //             if (!from || !to) continue;
+        //             const dstMac = from === port ? to.getParent()!.mac : from.getParent()!.mac;
+        //             nic.send(dstMac);
+        //         }
+        //     }
+        // }
     }
 
 }

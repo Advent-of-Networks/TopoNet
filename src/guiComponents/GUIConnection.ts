@@ -1,9 +1,9 @@
 
 import { Connection } from "../components/Connection";
 import { Port } from "../components/Ports";
-import { TransmitUnit } from "../components/TransmitUnit";
+import { Transmission } from "../components/Transmission";
 import { Direction, GUIElementDragEvent, GUIElementDropEvent } from "../components/types";
-import { Emulation } from "../engine/Emulation";
+import { Emulation, PacketMode } from "../engine/Emulation";
 import { distance, isPointNearBezier } from "../lib/bezier";
 import { GUIElement } from "./GUIElement";
 
@@ -14,7 +14,7 @@ export enum DraggingPoint {
     End = 1,
 }
 
-export class GUIConnection extends GUIElement<Port | null, TransmitUnit> {
+export class GUIConnection extends GUIElement<Port | null, Transmission> {
 
     constructor(emulation: Emulation) {
         super(null, emulation);
@@ -62,7 +62,6 @@ export class GUIConnection extends GUIElement<Port | null, TransmitUnit> {
             this.offsetY += offsetY;
         }
     }
-
 
     private onDrop(e: Event) {
         if (!(e instanceof GUIElementDropEvent)) return;

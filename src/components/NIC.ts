@@ -3,7 +3,8 @@ import { GUINIC } from "../guiComponents/GUINIC";
 import { EthernetFrame, EthernetFrameType } from "./EthernetFrame";
 import { Iface } from "./Iface";
 import { Port } from "./Ports";
-import { TransmitUnit } from "./TransmitUnit";
+import { Transmission } from "./Transmission";
+import { TransmissionUnit } from "./TransmissionUnit";
 import { Direction, MacAddress } from "./types";
 
 export function formatMAC(address: MacAddress) {
@@ -14,8 +15,8 @@ export class NIC extends GUINIC {
 
     mac: MacAddress;
 
-    queue: EthernetFrame[] = [];
-    sendingTransitUnit: TransmitUnit | null = null;
+    queue: TransmissionUnit[] = [];
+    sendingTransmission: Transmission | null = null;
 
     forward: boolean = false;
 
@@ -39,20 +40,28 @@ export class NIC extends GUINIC {
     }
 
     update(deltaT: number) {
-        if (!this.sending() && this.queue.length > 0) {
+        if (!this.sending() && !this.receiving() && this.queue.length > 0) {
             this.getChildren()[0].send(this.queue.pop()!);
         }
     }
 
     send(dstMac: MacAddress) {
         const frame = new EthernetFrame(dstMac, this.mac,EthernetFrameType.EXPERIMENTAL1);
+        const tu = new TransmissionUnit(this.getEmulation(), frame);
         // TODO: if there is more than one port, use ARP Table (switches only)
-        this.queue.unshift(frame);
+        this.queue.unshift(tu);
     }
 
     sending() {
         for (const port of this.getChildren()) {
             if (port.sending()) return true;
+        }
+        return false;
+    }
+
+    receiving() {
+        for (const port of this.getChildren()) {
+            if (port.receiving()) return true;
         }
         return false;
     }
@@ -69,11 +78,11 @@ export class NIC extends GUINIC {
         }
     }
 
-    receive(transmitUnit: TransmitUnit) {
-        const {payload} = transmitUnit;
+    receive(transmission: Transmission) {
+        const transmissionUnit = transmission.getChild()!;
         if (this.forward) {
-            const [from, to] = transmitUnit.getParent()!.getPorts();
-            const receiver = transmitUnit.forward ? to : from;
+            const [from, to] = transmission.getParent()!.getPorts();
+            const receiver = transmission.forward ? to : from;
             const collision = this.sending();
             // corrupt old TUs
             if(collision) {
@@ -81,7 +90,7 @@ export class NIC extends GUINIC {
             }
             for (const port of this.getChildren()) {
                 if (port === receiver) continue;
-                port.send(payload);
+                port.send(transmissionUnit);
             }
             // corrupt new TUs
             if(collision) {
