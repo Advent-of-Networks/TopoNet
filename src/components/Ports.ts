@@ -86,7 +86,7 @@ export class Port extends GUIElement<NIC, Connection> {
         this.receivingTransmission = transmission;
         if (this.getDuplex() === Duplex.HALF && this.sendingTransission !== null) {
             this.sendingTransission.getChild()!.abort(this.sendingTransission.getLifeTime() * this.getChild()!.getSpeedBpms());
-            this.jam();
+            if (this.sendingTransission.getChild()!.payload !== null) this.jam();
         }
         this.getParent()!.receive(transmission);
     }
